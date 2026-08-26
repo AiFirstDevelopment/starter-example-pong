@@ -54,8 +54,8 @@ already does.
 - [ ] AC7: When the player drags a finger and then holds a movement key, the
       keyboard takes over; when they touch again, touch takes over. The most
       recent input wins, across touch, mouse and keys alike. Every existing mouse
-      and keyboard behaviour is unchanged — the seven tests in
-      `tests/e2e/mouse.spec.ts` still pass without modification.
+      and keyboard behaviour is unchanged — every test in
+      `tests/e2e/mouse.spec.ts` still passes without modification.
 - [ ] AC8: When the page is loaded twice with `?seed=1` and driven with the same
       inputs, the rally is identical. The simulation stays deterministic and
       frame-rate independent.
@@ -149,7 +149,7 @@ are read off the source and remain to be verified.
       court-originated gesture by target alone. No `pointercancel` arrives once
       `touch-action: none` is set.
 - [x] C5: Replacing the `mousemove` listener with `pointermove` preserves mouse
-      behaviour exactly, so the seven tests in `tests/e2e/mouse.spec.ts` pass
+      behaviour exactly, so every test in `tests/e2e/mouse.spec.ts` passes
       unchanged.
 - [x] C6: `playwright.config.ts` declares a single `chromium` project using
       `devices['Desktop Chrome']`, which has `hasTouch: false`. No touch test can

@@ -2,12 +2,12 @@
   "slug": "mobile-touch-controls",
   "branch": "fix/mobile-touch-controls",
   "stage": "published",
-  "updated": "2026-08-26T20:41:10Z",
+  "updated": "2026-08-26T21:21:46Z",
   "plan": {
     "acs": 8,
     "steps": 8,
     "open": 0,
-    "requirementsHash": "ff69e06250d36b70d1a86378ad2d73ca07ecc8576f3c136f66c7d62eb9517c18"
+    "requirementsHash": "903818f0094f9d4d690d78cb6d7e9d9b2d4ed3efa1a8a25f4abdbfdadb03e547"
   },
   "build": {
     "stepsDone": 8,
@@ -39,20 +39,10 @@
     "escalations": 2,
     "head": "e649550"
   },
-  "recheck": {
-    "findings": 1,
-    "blockers": 0,
-    "head": "e649550"
-  },
   "pr": {
     "url": "https://github.com/AiFirstDevelopment/starter-example-pong/pull/3",
     "number": 3,
     "draft": false
-  },
-  "guard": {
-    "clean": true,
-    "violations": 0,
-    "gate": "unknown"
   },
   "log": [
     "2026-08-26T19:17:12Z 1-plan planned 8 ACs, 8 steps, 0 open questions; branched from main at ddd7c34 after merging PRs #1 and #2",
@@ -63,6 +53,19 @@
     "2026-08-26T20:21:16Z 3-review round 1, 6 lenses, 6 findings, 0 blockers, over 7a5b954 (recorded by 4-quorum; the scribe is write-only)",
     "2026-08-26T20:21:21Z 4-quorum adjudicated ready with follow-ups, 2 escalations, AC5 partial (landscape scroll trap)",
     "2026-08-26T20:22:55Z 4-quorum head corrected to e649550 after amending the verdict citations; guard clean",
-    "2026-08-26T20:41:10Z 5-publish committed the adjudicated state.json and 007-judge-diff (judge-diff F1), pushed fix/mobile-touch-controls, opened PR #3 ready for review; guard clean (0 violations), gate unknown - branch protection needs admin access to read"
-  ]
+    "2026-08-26T20:41:10Z 5-publish committed the adjudicated state.json and 007-judge-diff (judge-diff F1), pushed fix/mobile-touch-controls, opened PR #3 ready for review; guard clean (0 violations), gate unknown - branch protection needs admin access to read",
+    "2026-08-26T21:21:46Z E2 settled by user: AC7 and C5 drop the test count and name the file instead. Requirements amended by explicit user instruction, so requirementsHash re-recorded ff69e06250d36b70d1a86378ad2d73ca07ecc8576f3c136f66c7d62eb9517c18 -> 903818f0094f9d4d690d78cb6d7e9d9b2d4ed3efa1a8a25f4abdbfdadb03e547. Substance unchanged: every mouse test passed unmodified before and after.",
+    "2026-08-26T21:21:46Z E1 settled by user: option (a) ship as-is, landscape raised to blocking as the next work item. AC5 stays partial by design.",
+    "2026-08-26T21:21:46Z CI (Linux) failed AC6 after the run: Chromium stops synthesizing click on the court once a drag has happened there, so tap-to-start died on a phone. Fixed in 339c015 by reading the tap from pointerdown/pointerup. Reproduced and verified in the CI image; suite green on Linux and macOS."
+  ],
+  "recheck": {
+    "findings": 1,
+    "blockers": 0,
+    "head": "e649550"
+  },
+  "guard": {
+    "clean": true,
+    "violations": 0,
+    "gate": "unknown"
+  }
 }
