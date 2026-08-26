@@ -1,8 +1,8 @@
 {
   "slug": "mobile-touch-controls",
   "branch": "fix/mobile-touch-controls",
-  "stage": "adjudicated",
-  "updated": "2026-08-26T20:22:55Z",
+  "stage": "published",
+  "updated": "2026-08-26T20:41:10Z",
   "plan": {
     "acs": 8,
     "steps": 8,
@@ -39,6 +39,21 @@
     "escalations": 2,
     "head": "e649550"
   },
+  "recheck": {
+    "findings": 1,
+    "blockers": 0,
+    "head": "e649550"
+  },
+  "pr": {
+    "url": "https://github.com/AiFirstDevelopment/starter-example-pong/pull/3",
+    "number": 3,
+    "draft": false
+  },
+  "guard": {
+    "clean": true,
+    "violations": 0,
+    "gate": "unknown"
+  },
   "log": [
     "2026-08-26T19:17:12Z 1-plan planned 8 ACs, 8 steps, 0 open questions; branched from main at ddd7c34 after merging PRs #1 and #2",
     "2026-08-26T19:34:47Z plan approved by user via 1-plan",
@@ -47,11 +62,7 @@
     "2026-08-26T20:09:19Z panel complete, adjudication started",
     "2026-08-26T20:21:16Z 3-review round 1, 6 lenses, 6 findings, 0 blockers, over 7a5b954 (recorded by 4-quorum; the scribe is write-only)",
     "2026-08-26T20:21:21Z 4-quorum adjudicated ready with follow-ups, 2 escalations, AC5 partial (landscape scroll trap)",
-    "2026-08-26T20:22:55Z 4-quorum head corrected to e649550 after amending the verdict citations; guard clean"
-  ],
-  "guard": {
-    "clean": true,
-    "violations": 0,
-    "gate": "unknown"
-  }
+    "2026-08-26T20:22:55Z 4-quorum head corrected to e649550 after amending the verdict citations; guard clean",
+    "2026-08-26T20:41:10Z 5-publish committed the adjudicated state.json and 007-judge-diff (judge-diff F1), pushed fix/mobile-touch-controls, opened PR #3 ready for review; guard clean (0 violations), gate unknown - branch protection needs admin access to read"
+  ]
 }
