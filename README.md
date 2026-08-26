@@ -25,6 +25,13 @@ First to 11 points wins. Browsers only allow sound to start from a key press or
 a click, so the court is silent until you start — moving the mouse is neither,
 which is why a click starts the game and a mousemove does not.
 
+**Known behaviour:** the paddle does not follow the pointer until the game has
+started. The court is deliberately still before the first key or click, so a
+mousemove in that moment sets where the paddle will go without moving it, and
+the paddle arrives under the pointer on the click that starts play. This is a
+decided trade-off against keeping the opening court silent and motionless, not
+an oversight.
+
 ## Running it
 
 ```bash

@@ -2,7 +2,7 @@
   "slug": "mouse-and-smooth-paddle",
   "branch": "feature/mouse-and-smooth-paddle",
   "stage": "published",
-  "updated": "2026-08-26T17:16:09Z",
+  "updated": "2026-08-26T18:15:11Z",
   "plan": {
     "acs": 8,
     "steps": 7,
@@ -45,15 +45,6 @@
     "draft": true,
     "base": "feature/single-player-pong"
   },
-  "recheck": {
-    "findings": 1,
-    "blockers": 0
-  },
-  "guard": {
-    "clean": false,
-    "violations": 1,
-    "gate": "unknown"
-  },
   "log": [
     "2026-08-26T16:00:55Z 1-plan planned 8 ACs, 7 steps, 0 open questions",
     "2026-08-26T16:03:28Z plan approved by user via 1-plan",
@@ -62,6 +53,16 @@
     "2026-08-26T16:30:20Z 2-build deviation count corrected to 8 (6 deviations plus 2 PLAN DEFECTs; the earlier 7 undercounted); nothing else changed",
     "2026-08-26T16:53:21Z panel complete, adjudication started",
     "2026-08-26T17:03:38Z 4-quorum adjudicated ready with follow-ups, 3 escalations, AC1 partly unmet, suite green 38 unit + 27 e2e",
-    "2026-08-26T17:16:09Z 5-pr published draft PR #2 (guard 1 violation: verdict outcome vs open escalations; gate unknown, branch protection unreadable), base feature/single-player-pong"
-  ]
+    "2026-08-26T17:16:09Z 5-pr published draft PR #2 (guard 1 violation: verdict outcome vs open escalations; gate unknown, branch protection unreadable), base feature/single-player-pong",
+    "2026-08-26T18:15:11Z E1 settled by user: option 3, logged as known behaviour. AC1 stays as written and stays partly met by design; requirements untouched, so unmet remains 1."
+  ],
+  "recheck": {
+    "findings": 1,
+    "blockers": 0
+  },
+  "guard": {
+    "clean": false,
+    "violations": 1,
+    "gate": "unknown"
+  }
 }
