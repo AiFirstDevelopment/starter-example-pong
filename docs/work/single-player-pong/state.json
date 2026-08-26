@@ -1,8 +1,8 @@
 {
   "slug": "single-player-pong",
   "branch": "feature/single-player-pong",
-  "stage": "adjudicated",
-  "updated": "2026-08-26T15:06:05Z",
+  "stage": "published",
+  "updated": "2026-08-26T15:12:40Z",
   "plan": {
     "acs": 10,
     "steps": 9,
@@ -51,6 +51,20 @@
     "2026-08-26T14:44:08Z panel complete, adjudication started",
     "2026-08-26T15:04:25Z 3-review round 1: 6 lenses, 17 findings, 0 blockers, read 0e12bda (recorded by 4-quorum on the scribe's behalf)",
     "2026-08-26T15:04:25Z 4-quorum adjudicated ready with follow-ups, 17 accepted, 0 rejected, 3 escalations, suite green (27 unit, 15 behavioural)",
-    "2026-08-26T15:06:05Z 4-quorum verdict citations corrected; verdict head now 657c639"
-  ]
+    "2026-08-26T15:06:05Z 4-quorum verdict citations corrected; verdict head now 657c639",
+    "2026-08-26T15:12:40Z 5-publish opened draft PR #1; guard 1 violation (verdict outcome vs open escalations) led the body verbatim, gate unknown (branch protection needs admin to read)"
+  ],
+  "pr": {
+    "url": "https://github.com/AiFirstDevelopment/starter-example-3/pull/1",
+    "draft": true
+  },
+  "recheck": {
+    "findings": 1,
+    "blockers": 0
+  },
+  "guard": {
+    "clean": false,
+    "violations": 1,
+    "gate": "unknown"
+  }
 }
