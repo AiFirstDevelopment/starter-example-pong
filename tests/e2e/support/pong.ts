@@ -34,6 +34,14 @@ export interface Span {
   bottom: number;
 }
 
+/** The canvas's box on screen, in viewport coordinates. */
+export interface Box {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 /** A frame of Playwright's faked clock: `requestAnimationFrame` runs on it. */
 export const FRAME_MS = 16;
 
@@ -195,6 +203,21 @@ export async function paddleAt(page: Page, side: 'player' | 'cpu'): Promise<Span
   }, side === 'player' ? 30 : 770);
 }
 
+/**
+ * Where the canvas is on screen, which is not where the court is: the page is
+ * responsive, so the canvas is drawn at 800x480 and displayed at whatever width
+ * is going. Tests that point at the court have to go through this rather than
+ * assume the two agree.
+ */
+export async function courtBox(page: Page): Promise<Box> {
+  return page.evaluate(() => {
+    const rect = (
+      document.getElementById('court') as HTMLCanvasElement
+    ).getBoundingClientRect();
+    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  });
+}
+
 /** An image of the whole court, for asking whether anything moved. */
 export async function courtImage(page: Page): Promise<string> {
   return page.evaluate(() =>
@@ -219,6 +242,9 @@ export interface Sample {
   frame: number;
   played: number;
   ball: Point | null;
+  /** Where each paddle was drawn, the same reading `paddleAt` takes. */
+  player: Span;
+  cpu: Span;
   playerScore: string;
   cpuScore: string;
 }
@@ -251,7 +277,14 @@ async function sample(page: Page): Promise<Omit<Sample, 'frame'>> {
     const playerScore = document.getElementById('player-score')?.textContent ?? '';
     const cpuScore = document.getElementById('cpu-score')?.textContent ?? '';
     if (context === null) {
-      return { played, ball: null, playerScore, cpuScore };
+      return {
+        played,
+        ball: null,
+        player: { top: -1, bottom: -1 },
+        cpu: { top: -1, bottom: -1 },
+        playerScore,
+        cpuScore,
+      };
     }
     const { data, width, height } = context.getImageData(
       0,
@@ -272,13 +305,58 @@ async function sample(page: Page): Promise<Omit<Sample, 'frame'>> {
         }
       }
     }
+    // The same column and the same threshold `paddleAt` uses, off the reading
+    // of the canvas this frame already took.
+    const spanAt = (column: number) => {
+      let top = -1;
+      let bottom = -1;
+      for (let y = 0; y < height; y += 1) {
+        const i = (y * width + column) * 4;
+        if (data[i] > 200 && data[i + 1] > 200 && data[i + 2] > 200) {
+          top = top === -1 ? y : top;
+          bottom = y;
+        }
+      }
+      return { top, bottom };
+    };
+
     return {
       played,
       ball: found === 0 ? null : { x: sumX / found, y: sumY / found },
+      player: spanAt(30),
+      cpu: spanAt(770),
       playerScore,
       cpuScore,
     };
   });
+}
+
+/**
+ * How far the thing moved from one frame to the next, frame by frame.
+ *
+ * A reading of -1 is nothing found on the canvas, which is not a distance, so
+ * the run breaks there rather than reporting a jump off the edge of the court.
+ */
+export function frameSteps(readings: (number | null)[]): number[] {
+  const steps: number[] = [];
+  for (let i = 1; i < readings.length; i += 1) {
+    const from = readings[i - 1];
+    const to = readings[i];
+    if (from === null || to === null || from < 0 || to < 0) {
+      throw new Error(`nothing to measure between frames ${i - 1} and ${i}`);
+    }
+    steps.push(to - from);
+  }
+  return steps;
+}
+
+/** The biggest change from one step to the next: how uneven the motion was. */
+export function unevenness(steps: number[]): number {
+  let worst = 0;
+  for (let i = 1; i < steps.length; i += 1) {
+    worst = Math.max(worst, Math.abs(steps[i] - steps[i - 1]));
+  }
+  return worst;
 }
 
 /**

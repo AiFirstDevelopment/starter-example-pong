@@ -1,12 +1,13 @@
 /**
- * Wires the pieces together: keyboard in, simulation forward, court and score
- * out. The simulation runs on a fixed timestep so a rally plays out the same
- * way whatever the frame rate.
+ * Wires the pieces together: keys and mouse in, simulation forward, court and
+ * score out. The simulation runs on a fixed timestep so a rally plays out the
+ * same way whatever the frame rate, and the court is drawn between two ticks so
+ * it moves evenly whatever the frame rate too.
  */
 
 import { createAudio, soundFor } from './audio';
-import { createKeyboard } from './input';
-import { render } from './render';
+import { createControls } from './input';
+import { interpolate, render } from './render';
 import { statusText } from './status';
 import { readSeed } from './game/rng';
 import { createState, startGame, type GameState } from './game/state';
@@ -32,7 +33,8 @@ function courtContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   return found;
 }
 
-const context = courtContext(element<HTMLCanvasElement>('court'));
+const court = element<HTMLCanvasElement>('court');
+const context = courtContext(court);
 
 const playerScore = element('player-score');
 const cpuScore = element('cpu-score');
@@ -86,23 +88,32 @@ function handle(event: GameEvent): void {
   }
 }
 
-const keyboard = createKeyboard(window, { onStart: start, onToggleMute: toggleMute });
+const controls = createControls(window, court, {
+  onStart: start,
+  onToggleMute: toggleMute,
+});
 muteButton.addEventListener('click', () => {
   toggleMute();
   // Otherwise the next key press activates the focused button as well.
   muteButton.blur();
 });
 
-let previous: number | null = null;
+let previousFrameMs: number | null = null;
 let accumulator = 0;
+/** The tick before `state`, kept only so the court can be drawn between them. */
+let previousState: GameState = state;
 
 function frame(now: number): void {
-  accumulator = Math.min(accumulator + (now - (previous ?? now)), MAX_FRAME_MS);
-  previous = now;
+  accumulator = Math.min(
+    accumulator + (now - (previousFrameMs ?? now)),
+    MAX_FRAME_MS,
+  );
+  previousFrameMs = now;
 
-  const input = keyboard.input();
+  const input = controls.input();
   while (accumulator >= FIXED_DT_MS) {
     accumulator -= FIXED_DT_MS;
+    previousState = state;
     const result = step(state, FIXED_DT_MS, input);
     state = result.state;
     for (const event of result.events) {
@@ -110,7 +121,9 @@ function frame(now: number): void {
     }
   }
 
-  render(context, state);
+  // Whatever is left in the accumulator is how far past the last tick this
+  // frame is, and it is always less than one tick.
+  render(context, interpolate(previousState, state, accumulator / FIXED_DT_MS));
   window.requestAnimationFrame(frame);
 }
 

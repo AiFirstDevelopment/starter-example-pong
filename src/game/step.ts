@@ -31,6 +31,13 @@ import {
 export interface Input {
   up: boolean;
   down: boolean;
+  /**
+   * Where the player wants the centre of their paddle, in court pixels, or
+   * `null` when they are driving it with the movement keys instead. It is an
+   * absolute position rather than a direction because a mouse names a place,
+   * not a way to go; out-of-court values are clamped like any other move.
+   */
+  targetY: number | null;
 }
 
 export type GameEvent =
@@ -46,7 +53,7 @@ export interface StepResult {
   events: GameEvent[];
 }
 
-export const NO_INPUT: Input = { up: false, down: false };
+export const NO_INPUT: Input = { up: false, down: false, targetY: null };
 
 function clamp(value: number, low: number, high: number): number {
   return Math.min(high, Math.max(low, value));
@@ -94,8 +101,14 @@ export function step(state: GameState, dtMs: number, input: Input): StepResult {
   const next: GameState = { ...state, ball: { ...state.ball }, score: { ...state.score } };
 
   // Both paddles move, whether the ball is in play or waiting to be served.
-  const playerDirection = (input.down ? 1 : 0) - (input.up ? 1 : 0);
-  next.playerY = clampPaddle(next.playerY + playerDirection * PADDLE_SPEED * dt);
+  if (input.targetY === null) {
+    const playerDirection = (input.down ? 1 : 0) - (input.up ? 1 : 0);
+    next.playerY = clampPaddle(next.playerY + playerDirection * PADDLE_SPEED * dt);
+  } else {
+    // A named position is taken as given: the paddle goes there this tick
+    // rather than travelling towards it at PADDLE_SPEED.
+    next.playerY = clampPaddle(input.targetY - PADDLE_HEIGHT / 2);
+  }
   const cpuDelta = cpuVelocity(paddleCentre(next.cpuY), cpuTargetY(next.ball)) * dt;
   next.cpuY = clampPaddle(next.cpuY + cpuDelta);
 
