@@ -35,14 +35,14 @@ reviews.
 | AC | Met | Evidence |
 |---|---|---|
 | AC1 | yes | `tests/e2e/court.spec.ts:20` — 0–0 in the DOM, both paddles centred at 200–279, ball on the centre spot, the canvas byte-identical after 120 frames, and no sound recorded (the game never constructs an `AudioContext` before the start key). |
-| AC2 | yes | `court.spec.ts:44` (serve on Space; paddle clamped to 0–79 and 400–479 however long the key is held), `:71` (W/S), `:89` (**new** — a key released after Shift no longer sticks), `:119` (**new** — the start key no longer scrolls the score off screen). |
+| AC2 | yes | `tests/e2e/court.spec.ts:44` (serve on Space; paddle clamped to 0–79 and 400–479 however long the key is held), `tests/e2e/court.spec.ts:71` (W/S), `tests/e2e/court.spec.ts:89` (**new** — a key released after Shift no longer sticks), `tests/e2e/court.spec.ts:119` (**new** — the start key no longer scrolls the score off screen). |
 | AC3 | yes | `tests/e2e/collisions.spec.ts:41` — with `?seed=1` the computer paddle climbs to meet the serve and returns it from x > 700. |
-| AC4 | yes, after a fix | `collisions.spec.ts:62` for the positive half; `tests/unit/step.test.ts:75` (**new**) for the negative half. Before the fix, one tick could emit `[wall-hit, paddle-hit]` together — reproduced by a direct `step` call and found in simulation at seed 2, tick 12498. |
-| AC5 | yes | `collisions.spec.ts:81` — 226 Hz / 16 ms square against the paddle's 459 Hz / 90 ms, and the ball's vertical direction reverses across the bounce. |
-| AC6 | yes | `collisions.spec.ts:99` — sawtooth 490 → 120 Hz over 300 ms, different from both others in timbre, pitch and length, and now asserted to reach the audio destination rather than merely being scheduled. |
-| AC7 | yes | `tests/e2e/scoring.spec.ts:19` (computer scores, ball returns to the centre spot, ~0.9 s pause, then a fresh serve) and `:45` (player scores at `?seed=2`). Both read the score from the DOM. |
-| AC8 | yes, with a test gap | `scoring.spec.ts:59` drives a real 0–11, freezes play, announces "Computer wins!" and restarts at 0–0. The **player**-win announcement is covered only by `tests/unit/status.test.ts` — see E2. |
-| AC9 | yes | `tests/e2e/sound-control.spec.ts:13` — the muted stretch now contains a paddle strike as well as a wall hit and a ball leaving the court, and the sound count does not move; `:44` covers the button and its `aria-pressed`. |
+| AC4 | yes, after a fix | `tests/e2e/collisions.spec.ts:62` for the positive half; `tests/unit/step.test.ts:75` (**new**) for the negative half. Before the fix, one tick could emit a wall hit and a paddle hit together — reproduced by a direct `step` call and found in simulation at seed 2, tick 12498. |
+| AC5 | yes | `tests/e2e/collisions.spec.ts:81` — 226 Hz / 16 ms square against the paddle's 459 Hz / 90 ms, and the ball's vertical direction reverses across the bounce. |
+| AC6 | yes | `tests/e2e/collisions.spec.ts:99` — sawtooth 490 → 120 Hz over 300 ms, different from both others in timbre, pitch and length, and now asserted to reach the audio destination rather than merely being scheduled. |
+| AC7 | yes | `tests/e2e/scoring.spec.ts:19` (computer scores, ball returns to the centre spot, ~0.9 s pause, then a fresh serve) and `tests/e2e/scoring.spec.ts:45` (player scores at `?seed=2`). Both read the score from the DOM. |
+| AC8 | yes, with a test gap | `tests/e2e/scoring.spec.ts:59` drives a real 0–11, freezes play, announces "Computer wins!" and restarts at 0–0. The **player**-win announcement is covered only by `tests/unit/status.test.ts:22` — see E2. |
+| AC9 | yes | `tests/e2e/sound-control.spec.ts:13` — the muted stretch now contains a paddle strike as well as a wall hit and a ball leaving the court, and the sound count does not move; `tests/e2e/sound-control.spec.ts:44` covers the button and its `aria-pressed`. |
 | AC10 | yes | `tests/e2e/replay.spec.ts:30` — two loads of `?seed=1` give identical ball trails and identical recorded sounds; `?seed=9` differs. |
 
 Nothing is unmet.
@@ -176,6 +176,19 @@ the judge's easiest way to make a discrepancy disappear.
 - **Option B:** leave it, with the Build note and this verdict as the record.
 
 **Recommended: A**, in the next planning pass on this repo.
+
+### A note on `/quorum:guard`
+
+The guard reports one violation against this verdict: *outcome "ready with
+follow-ups" alongside open escalations*. Its own message, and the rule its skill
+documents ("`ready` over a red suite, alongside open escalations, or with an
+unmet criterion"), both say that "ready with follow-ups" is the correct outcome
+when escalations are open — `bin/guard.py` VERSION 3 applies the check to every
+outcome beginning with "ready", so it fires on the very wording it asks for. The
+outcome stands as written; changing it to `blocked` to satisfy the check would
+misreport a green suite with every criterion met. Everything else the guard
+checks — requirements unchanged, reviews append-only, no test weakened, every
+criterion cited and every citation real — passes.
 
 ## Follow-ups
 

@@ -1,8 +1,8 @@
 {
   "slug": "single-player-pong",
   "branch": "feature/single-player-pong",
-  "stage": "reviewed",
-  "updated": "2026-08-26T14:44:08Z",
+  "stage": "adjudicated",
+  "updated": "2026-08-26T15:04:25Z",
   "plan": {
     "acs": 10,
     "steps": 9,
@@ -15,9 +15,31 @@
     "suite": "green",
     "head": "0e12bda"
   },
+  "review": {
+    "round": 1,
+    "lenses": [
+      "behavior",
+      "correctness",
+      "spec-fidelity",
+      "security",
+      "simplicity",
+      "test-quality"
+    ],
+    "missing": [],
+    "findings": 17,
+    "blockers": 0,
+    "head": "0e12bda"
+  },
+  "verdict": {
+    "outcome": "ready with follow-ups",
+    "suite": "green",
+    "accepted": 17,
+    "rejected": 0,
+    "unmet": 0,
+    "escalations": 3,
+    "head": "b3b35c6"
+  },
   "log": [
-    "2026-08-26T12:44:39Z run stopped by user mid-build (S1-S7 committed, S8-S9 not run, no reviews); branch reset to fork point, approval gate re-armed. Build preserved on branch attempt-2-build. Awaiting new pipeline version.",
-    "2026-08-26T12:49:47Z plan approved by user via 1-plan",
     "2026-08-26T13:01:55Z pipeline launched (attempt 3) via /quorum:pipeline, diffRange 4644a71...HEAD",
     "2026-08-26T13:19:58Z run stopped by user mid-build (S1 committed, S2-S6 uncommitted, no reviews); branch reset to fork point, approval gate re-armed. Build preserved on branch attempt-3-build. Awaiting new skills version.",
     "2026-08-26T13:26:26Z attempt-1-build, attempt-2-build and attempt-3-build deleted at user request; earlier log lines claiming those builds are preserved no longer hold.",
@@ -27,6 +49,8 @@
     "2026-08-26T13:48:38Z pipeline approved by user, starting unattended run (attempt 5; attempts 1-4 discarded or stopped before any review ran)",
     "2026-08-26T13:48:45Z pipeline launched (attempt 5) via /quorum:pipeline, diffRange 4644a71...HEAD",
     "2026-08-26T14:22:29Z 2-build built 9/9, 8 deviations, suite green (23 unit, 13 behavioural)",
-    "2026-08-26T14:44:08Z panel complete, adjudication started"
+    "2026-08-26T14:44:08Z panel complete, adjudication started",
+    "2026-08-26T15:04:25Z 3-review round 1: 6 lenses, 17 findings, 0 blockers, read 0e12bda (recorded by 4-quorum on the scribe's behalf)",
+    "2026-08-26T15:04:25Z 4-quorum adjudicated ready with follow-ups, 17 accepted, 0 rejected, 3 escalations, suite green (27 unit, 15 behavioural)"
   ]
 }
