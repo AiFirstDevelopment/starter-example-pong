@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pong</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main class="game">
+      <h1>Pong</h1>
+
+      <p class="scoreboard" aria-live="polite">
+        <span class="scoreboard__side">Player <span id="player-score">0</span></span>
+        <span class="scoreboard__dash">–</span>
+        <span class="scoreboard__side"><span id="cpu-score">0</span> Computer</span>
+      </p>
+
+      <canvas
+        id="court"
+        width="800"
+        height="480"
+        aria-label="Pong court. The score is announced above the court."
+      ></canvas>
+
+      <p id="status" class="status" role="status">Press any key to start</p>
+
+      <p class="controls">
+        <button id="mute" type="button" aria-pressed="false">Sound on</button>
+      </p>
+
+      <p class="hint">
+        Move with <kbd>↑</kbd> / <kbd>↓</kbd> or <kbd>W</kbd> / <kbd>S</kbd>.
+        <kbd>M</kbd> toggles sound. First to 11 wins.
+      </p>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

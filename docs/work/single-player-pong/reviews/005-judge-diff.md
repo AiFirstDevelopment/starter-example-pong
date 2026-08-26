@@ -1,0 +1,25 @@
+# Review 005 — judge-diff
+
+- **Lens:** judge-diff
+- **Verdict:** findings
+- **Diff range:** 0e12bda..657c639 (b3b35c6 "Adjudicate the Pong build..." + 657c639 "Cite full paths in the verdict..."), per docs/work/single-player-pong/state.json review.head/verdict.head
+
+> **Scope note:** This review covers the judge's own adjudication commits (b3b35c6 and 657c639), which no other lens saw. The other reviews in this directory were produced against review.head (0e12bda) and therefore did not examine any of the changes assessed here.
+
+## Findings
+
+### F1 — minor
+
+**Claim:** The verdict's AC8 citation, added by the judge's own "cite full paths" commit, points at the wrong assertion inside the test it names.
+
+**Location:** `docs/work/single-player-pong/verdict.md:42`
+
+**What:** Commit 657c639 changed the AC8 evidence cell from the bare filename `tests/unit/status.test.ts` to `tests/unit/status.test.ts:22`, specifically to support the claim that AC8's player-win announcement is only unit-tested (the row this same commit's message calls out as previously "evidence-free"). In tests/unit/status.test.ts, the single `it()` block covering both endings starts at line 20 (`it('announces the winner, whichever side won', ...)`); line 21 is the player-win assertion (`expect(statusText(finished('player'))).toBe('You win! ...')`); line 22 is the *computer*-win assertion (`expect(statusText(finished('cpu'))).toBe('Computer wins! ...')`). Every other new citation in this same commit points at the opening line of the relevant test/`it` block (e.g. `tests/e2e/court.spec.ts:89`, `tests/unit/step.test.ts:75`), so this one line number is both inconsistent with the pattern and, taken literally, cites the wrong side's assertion for the exact behaviour (player win) the row is vouching for.
+
+**Failure scenario:** A human following up on escalation E2 ("how much is AC8's player-win announcement worth?") opens the cited line to see the player-win coverage and instead lands on `expect(statusText(finished('cpu'))).toBe('Computer wins! ...')` — the computer-win assertion, not the player-win one the row and E2 are about. The underlying claim (player win is unit-only) is still true, but the one piece of evidence this citation-fixing commit added for it is wrong.
+
+**Suggested direction:** Point the citation at tests/unit/status.test.ts:20 (the it block) or :21 (the specific player-win assertion) instead of :22.
+
+## Notes
+
+Range confirmed from state.json: review.head=0e12bda, verdict.head=657c639, two commits (b3b35c6, 657c639). b3b35c6 carries all the substantive code/test changes; 657c639 touches only docs/work/single-player-pong/state.json and verdict.md (citation-path corrections plus a note on the guard's escalation check). I read every hunk touching src/ and tests/ in b3b35c6 (game/state.ts, game/step.ts, input.ts, main.ts, status.ts new, style.css, package.json, playwright.config.ts, and the e2e/unit test files) and cross-checked the judge's factual claims against the actual repository/environment rather than trusting the verdict's prose: ran `npm run test:unit` (27/27 pass), `npx playwright test` (15/15 pass), `npm run build` (typechecks and bundles cleanly), and `npm audit` (0 vulnerabilities, matching the security-fix claim). Verified the corner-collision fix in src/game/step.ts algebraically (BALL_SPEED=380, fixed tick=1000/120ms => ~3.17px/tick vs a 26px paddle strike window, matching the fix's own comment) and against its new unit test, which correctly exercises the deferred-tick behaviour. Verified the input.ts key-name lower-casing fix does not reintroduce the Shift-stuck-key bug and that removing Keyboard.dispose (unused everywhere, confirmed by grep) and the unused `--ball` CSS variable are both accurately described as dead-code removals in verdict.md's dispositions table, matching simplicity F2/F3. Verified several of the judge's most checkable side-claims for fabrication risk: the chromium-1234 cache timestamp (2026-08-25, confirmed via `stat`), the exact commit SHAs cited in plan.md's build notes (1ebc96c/6dcb588/0e12bda, confirmed via `git log`), and the guard.py self-contradiction claim about "ready with follow-ups" (confirmed by reading /Users/joelstevick/starter/plugins/quorum/bin/guard.py lines 275-291) — all checked out as accurate, not invented. I did not run mutation testing (e.g. temporarily breaking audio.ts's connect() calls or the mute check) to verify the verdict's claimed mutation results, since I have no file-editing tools and was instructed not to modify the tree even temporarily; those specific mutation claims are taken on the verdict's word. Aside from the one citation-precision defect reported, I found no evidence of symptom-suppression, mismatched guard/twin fixes, weakened tests, or collateral damage introduced by the judge's commits — the corner-collision fix addresses the root cause described in the plan's own flowchart, is backed by a real regression test, and the toolchain/test-quality fixes were independently verifiable.

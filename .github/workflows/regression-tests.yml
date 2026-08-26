@@ -1,0 +1,67 @@
+name: Regression tests
+
+# The suite is a merge gate, so it runs on every pull request into the default
+# branch and on the default branch itself. Nothing here writes to the repository:
+# the quorum pipeline is invoked by a human per branch, never by CI.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: regression-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Branch protection references this job by name. Renaming it silently disables
+  # the gate — the required check simply never reports again.
+  regression-tests:
+    name: regression-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      # Run unconditionally: it is near-instant on a cache hit, and --with-deps
+      # installs the OS packages Chromium needs, which the cache does not carry.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # A distinct step so a type error is attributable to the build rather than
+      # surfacing inside Playwright's webServer, which builds again on purpose:
+      # reuseExistingServer is false so the suite never runs on a stale bundle.
+      - name: Build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Behavioural tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

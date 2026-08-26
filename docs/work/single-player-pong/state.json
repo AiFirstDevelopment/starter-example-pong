@@ -1,0 +1,70 @@
+{
+  "slug": "single-player-pong",
+  "branch": "feature/single-player-pong",
+  "stage": "published",
+  "updated": "2026-08-26T15:12:40Z",
+  "plan": {
+    "acs": 10,
+    "steps": 9,
+    "open": 0,
+    "requirementsHash": "e259861ba322abe0a71c5fbc24c9f61ee393f761342eb5f51d7aab3c448e5036"
+  },
+  "build": {
+    "stepsDone": 9,
+    "deviations": 8,
+    "suite": "green",
+    "head": "0e12bda"
+  },
+  "review": {
+    "round": 1,
+    "lenses": [
+      "behavior",
+      "correctness",
+      "spec-fidelity",
+      "security",
+      "simplicity",
+      "test-quality"
+    ],
+    "missing": [],
+    "findings": 17,
+    "blockers": 0,
+    "head": "0e12bda"
+  },
+  "verdict": {
+    "outcome": "ready with follow-ups",
+    "suite": "green",
+    "accepted": 17,
+    "rejected": 0,
+    "unmet": 0,
+    "escalations": 3,
+    "head": "657c639"
+  },
+  "log": [
+    "2026-08-26T13:19:58Z run stopped by user mid-build (S1 committed, S2-S6 uncommitted, no reviews); branch reset to fork point, approval gate re-armed. Build preserved on branch attempt-3-build. Awaiting new skills version.",
+    "2026-08-26T13:26:26Z attempt-1-build, attempt-2-build and attempt-3-build deleted at user request; earlier log lines claiming those builds are preserved no longer hold.",
+    "2026-08-26T13:34:15Z pipeline approved by user, starting unattended run (attempt 4; attempts 1-3 discarded or stopped mid-build, none reached review)",
+    "2026-08-26T13:34:22Z pipeline launched (attempt 4) via /quorum:pipeline, diffRange 4644a71...HEAD",
+    "2026-08-26T13:36:28Z attempt 4 stopped by user immediately after launch; builder produced nothing (no commits, no files, no steps ticked, no reviews). Nothing to preserve or discard. Approval reset, gate re-armed.",
+    "2026-08-26T13:48:38Z pipeline approved by user, starting unattended run (attempt 5; attempts 1-4 discarded or stopped before any review ran)",
+    "2026-08-26T13:48:45Z pipeline launched (attempt 5) via /quorum:pipeline, diffRange 4644a71...HEAD",
+    "2026-08-26T14:22:29Z 2-build built 9/9, 8 deviations, suite green (23 unit, 13 behavioural)",
+    "2026-08-26T14:44:08Z panel complete, adjudication started",
+    "2026-08-26T15:04:25Z 3-review round 1: 6 lenses, 17 findings, 0 blockers, read 0e12bda (recorded by 4-quorum on the scribe's behalf)",
+    "2026-08-26T15:04:25Z 4-quorum adjudicated ready with follow-ups, 17 accepted, 0 rejected, 3 escalations, suite green (27 unit, 15 behavioural)",
+    "2026-08-26T15:06:05Z 4-quorum verdict citations corrected; verdict head now 657c639",
+    "2026-08-26T15:12:40Z 5-publish opened draft PR #1; guard 1 violation (verdict outcome vs open escalations) led the body verbatim, gate unknown (branch protection needs admin to read)"
+  ],
+  "pr": {
+    "url": "https://github.com/AiFirstDevelopment/starter-example-3/pull/1",
+    "draft": true
+  },
+  "recheck": {
+    "findings": 1,
+    "blockers": 0
+  },
+  "guard": {
+    "clean": false,
+    "violations": 1,
+    "gate": "unknown"
+  }
+}
