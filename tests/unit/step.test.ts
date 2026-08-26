@@ -8,6 +8,7 @@ import {
   COURT_WIDTH,
   CPU_X,
   PADDLE_HEIGHT,
+  PADDLE_SPEED,
   PADDLE_WIDTH,
   PLAYER_X,
   WINNING_SCORE,
@@ -228,10 +229,71 @@ describe('serving', () => {
   });
 });
 
+describe('the player paddle', () => {
+  const centred = (COURT_HEIGHT - PADDLE_HEIGHT) / 2;
+
+  it('moves at its own speed while a direction is held', () => {
+    const start = rally({}, { playerY: centred });
+
+    const up = step(start, TICK_MS, { ...NO_INPUT, up: true }).state;
+    const down = step(start, TICK_MS, { ...NO_INPUT, down: true }).state;
+
+    expect(up.playerY).toBeCloseTo(centred - (PADDLE_SPEED * TICK_MS) / 1000);
+    expect(down.playerY).toBeCloseTo(centred + (PADDLE_SPEED * TICK_MS) / 1000);
+  });
+
+  it('centres itself on a named position instead', () => {
+    const start = rally({}, { playerY: 0 });
+
+    const { state } = step(start, TICK_MS, { ...NO_INPUT, targetY: 300 });
+
+    expect(state.playerY).toBe(300 - PADDLE_HEIGHT / 2);
+  });
+
+  it('gets there in one tick however far away it is', () => {
+    // Nothing like PADDLE_SPEED * TICK_MS away: a named position is a place to
+    // be, not a place to set off towards.
+    const start = rally({}, { playerY: 0 });
+
+    const { state } = step(start, TICK_MS, { ...NO_INPUT, targetY: 400 });
+
+    expect(state.playerY).toBe(400 - PADDLE_HEIGHT / 2);
+  });
+
+  it('stays inside the court whatever position is named', () => {
+    const start = rally({}, { playerY: centred });
+
+    const above = step(start, TICK_MS, { ...NO_INPUT, targetY: -500 }).state;
+    const below = step(start, TICK_MS, { ...NO_INPUT, targetY: 5000 }).state;
+    const justOver = step(start, TICK_MS, { ...NO_INPUT, targetY: 20 }).state;
+
+    expect(above.playerY).toBe(0);
+    expect(below.playerY).toBe(COURT_HEIGHT - PADDLE_HEIGHT);
+    expect(justOver.playerY).toBe(0);
+  });
+
+  it('ignores the movement keys while a position is named', () => {
+    const start = rally({}, { playerY: centred });
+
+    const { state } = step(start, TICK_MS, { up: true, down: true, targetY: 100 });
+
+    expect(state.playerY).toBe(100 - PADDLE_HEIGHT / 2);
+  });
+
+  it('leaves the computer paddle out of it', () => {
+    const start = rally({ vx: 0, vy: 0 }, { playerY: centred, cpuY: centred });
+
+    const { state } = step(start, TICK_MS, { ...NO_INPUT, targetY: 40 });
+
+    expect(state.playerY).toBe(0);
+    expect(state.cpuY).toBe(centred);
+  });
+});
+
 describe('idle', () => {
   it('does nothing at all before the game starts', () => {
     const start = createState(1);
-    const { state, events } = step(start, TICK_MS, { up: true, down: false });
+    const { state, events } = step(start, TICK_MS, { ...NO_INPUT, up: true });
 
     expect(state).toBe(start);
     expect(events).toEqual([]);

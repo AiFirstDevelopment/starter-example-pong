@@ -102,6 +102,11 @@ test('AC2: a movement key let go after Shift does not stay stuck down', async ({
   await page.keyboard.up('Shift');
   await page.keyboard.up('w');
 
+  // The court is drawn part way between two ticks, so the frame that renders
+  // the release still finishes the last step of the glide -- up to a pixel of
+  // it. One more frame settles the paddle on where the simulation has it; take
+  // the baseline after that, so what follows is a like-for-like comparison.
+  await runFrames(page, 2);
   const released = await paddleAt(page, 'player');
   expect(released.top).toBeLessThan(CENTRED_PADDLE.top);
 

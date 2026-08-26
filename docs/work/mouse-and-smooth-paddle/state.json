@@ -1,0 +1,68 @@
+{
+  "slug": "mouse-and-smooth-paddle",
+  "branch": "feature/mouse-and-smooth-paddle",
+  "stage": "published",
+  "updated": "2026-08-26T18:15:11Z",
+  "plan": {
+    "acs": 8,
+    "steps": 7,
+    "open": 0,
+    "requirementsHash": "61cef3123a9f94997e1fc564cf1e8c90382d16682aa66ea7787578c104a063b0"
+  },
+  "build": {
+    "stepsDone": 7,
+    "deviations": 8,
+    "suite": "green",
+    "head": "9e7725f"
+  },
+  "review": {
+    "round": 1,
+    "lenses": [
+      "behavior",
+      "correctness",
+      "spec-fidelity",
+      "security",
+      "simplicity",
+      "test-quality"
+    ],
+    "missing": [],
+    "findings": 9,
+    "blockers": 0,
+    "head": "7683a35"
+  },
+  "verdict": {
+    "outcome": "ready with follow-ups",
+    "suite": "green",
+    "accepted": 5,
+    "rejected": 3,
+    "unmet": 1,
+    "escalations": 3,
+    "head": "89aa4c9"
+  },
+  "pr": {
+    "url": "https://github.com/AiFirstDevelopment/starter-example-3/pull/2",
+    "number": 2,
+    "draft": true,
+    "base": "feature/single-player-pong"
+  },
+  "log": [
+    "2026-08-26T16:00:55Z 1-plan planned 8 ACs, 7 steps, 0 open questions",
+    "2026-08-26T16:03:28Z plan approved by user via 1-plan",
+    "2026-08-26T16:03:48Z pipeline launched via /quorum:1-plan, diffRange 48e080f...HEAD (forked from feature/single-player-pong)",
+    "2026-08-26T16:29:26Z 2-build built 7/7, 7 deviations (2 PLAN DEFECTs: C1 partly false, C4 false), suite green (38 unit, 25 behavioural)",
+    "2026-08-26T16:30:20Z 2-build deviation count corrected to 8 (6 deviations plus 2 PLAN DEFECTs; the earlier 7 undercounted); nothing else changed",
+    "2026-08-26T16:53:21Z panel complete, adjudication started",
+    "2026-08-26T17:03:38Z 4-quorum adjudicated ready with follow-ups, 3 escalations, AC1 partly unmet, suite green 38 unit + 27 e2e",
+    "2026-08-26T17:16:09Z 5-pr published draft PR #2 (guard 1 violation: verdict outcome vs open escalations; gate unknown, branch protection unreadable), base feature/single-player-pong",
+    "2026-08-26T18:15:11Z E1 settled by user: option 3, logged as known behaviour. AC1 stays as written and stays partly met by design; requirements untouched, so unmet remains 1."
+  ],
+  "recheck": {
+    "findings": 1,
+    "blockers": 0
+  },
+  "guard": {
+    "clean": false,
+    "violations": 1,
+    "gate": "unknown"
+  }
+}
