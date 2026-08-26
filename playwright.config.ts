@@ -1,6 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { TOUCH_DEVICE } from './tests/e2e/support/pong';
+
 const PORT = 4173;
+
+/** The one spec that needs a finger, and the only one the phone project runs. */
+const TOUCH_SPEC = /touch\.spec\.ts$/;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -12,7 +17,20 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    // Desktop Chrome has no touch, so the touch spec cannot run here — and the
+    // rest of the suite stays on the desktop it has always been written for.
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      testIgnore: TOUCH_SPEC,
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...TOUCH_DEVICE },
+      testMatch: TOUCH_SPEC,
+    },
+  ],
   webServer: {
     // The tests drive the built app, the same bundle a player would load.
     command: 'npm run build && npm run preview',

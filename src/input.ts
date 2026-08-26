@@ -1,17 +1,18 @@
 /**
- * Input handling — the only place key and mouse events are read.
+ * Input handling — the only place key and pointer events are read.
  *
  * Movement keys are held, so they are tracked as state the loop samples each
- * tick; starting the game and toggling sound happen on the press itself. The
- * mouse is different in kind: it names a place rather than a direction, so what
- * is tracked is the last place it pointed at, in court coordinates.
+ * tick; starting the game and toggling sound happen on the press itself. A
+ * pointer — a mouse, a finger, a pen — is different in kind: it names a place
+ * rather than a direction, so what is tracked is the last place it pointed at,
+ * in court coordinates.
  */
 
 import { COURT_HEIGHT } from './game/state';
 import type { Input } from './game/step';
 
 export interface ControlHandlers {
-  /** Any key that is not a movement or sound key starts the game, and so does a click on the court. */
+  /** Any key that is not a movement or sound key starts the game, and so does a click or a tap on the court. */
   onStart: () => void;
   onToggleMute: () => void;
 }
@@ -51,6 +52,25 @@ export function courtY(clientY: number, box: CourtBox): number {
 }
 
 /**
+ * Whether a pointer that has just moved may drive the paddle.
+ *
+ * The mouse may, wherever it is: there is one cursor, it has nothing else to do
+ * on this page, and the paddle has to keep following it once the player asks for
+ * the top or the bottom of the court and the cursor leaves the canvas.
+ *
+ * A finger may not. A drag that started on the hint text is the player scrolling
+ * the page, and taking the paddle with it would leave the mute button
+ * unreachable on a phone, where the page is taller than the screen. So a finger
+ * drives the paddle only when the gesture began on the court — which is what
+ * `startedOnCourt` reports, and it stays true for the whole drag: the browser's
+ * implicit pointer capture keeps a touch's target on the canvas however far the
+ * finger wanders off it.
+ */
+export function drivesPaddle(pointerType: string, startedOnCourt: boolean): boolean {
+  return pointerType === 'mouse' || startedOnCourt;
+}
+
+/**
  * One name per physical key, on the way down and on the way up alike.
  *
  * `event.key` carries the shifted form, so a `w` pressed with Shift held
@@ -68,7 +88,7 @@ export function createControls(
   handlers: ControlHandlers,
 ): Controls {
   const held = new Set<string>();
-  /** Where the mouse last asked for the paddle, or null while the keys have it. */
+  /** Where the pointer last asked for the paddle, or null while the keys have it. */
   let targetY: number | null = null;
 
   const onKeyDown = (event: KeyboardEvent): void => {
@@ -91,8 +111,8 @@ export function createControls(
       held.add(key);
       if (!event.repeat) {
         // The most recent input wins, so reaching for the arrows takes the
-        // paddle back off the mouse. Auto-repeat is not a fresh press: a key
-        // held down while the mouse moves would otherwise snatch it back
+        // paddle back off the pointer. Auto-repeat is not a fresh press: a key
+        // held down while the pointer moves would otherwise snatch it back
         // thirty times a second and the two would fight.
         targetY = null;
       }
@@ -115,8 +135,15 @@ export function createControls(
    * On `window`, not on the canvas, so the paddle keeps following a pointer
    * that has left the court — which is where it goes the moment the player
    * asks for the top or the bottom of the court.
+   *
+   * `pointermove` rather than `mousemove`: a mouse, a finger and a pen all
+   * arrive here, all naming a place on the court in the same coordinates, and
+   * `drivesPaddle` decides which of them this one is allowed to name.
    */
-  const onMouseMove = (event: MouseEvent): void => {
+  const onPointerMove = (event: PointerEvent): void => {
+    if (!drivesPaddle(event.pointerType, event.target === court)) {
+      return;
+    }
     const box = court.getBoundingClientRect();
     if (box.height <= 0) {
       // A court with no height on screen has no scale to map through, and
@@ -129,7 +156,9 @@ export function createControls(
   /**
    * Moving the mouse is not a gesture a browser will start an `AudioContext`
    * from, so without this a mouse-only player has a game they cannot start and
-   * would not hear if they could.
+   * would not hear if they could. A tap on the court arrives here too — the
+   * browser synthesizes the click from it — so a phone starts the game the same
+   * way and unlocks the sound on the same gesture.
    */
   const onClick = (): void => {
     handlers.onStart();
@@ -138,7 +167,7 @@ export function createControls(
   target.addEventListener('keydown', onKeyDown);
   target.addEventListener('keyup', onKeyUp);
   target.addEventListener('blur', onBlur);
-  target.addEventListener('mousemove', onMouseMove);
+  target.addEventListener('pointermove', onPointerMove);
   court.addEventListener('click', onClick);
 
   return {

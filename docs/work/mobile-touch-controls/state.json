@@ -1,0 +1,17 @@
+{
+  "slug": "mobile-touch-controls",
+  "branch": "fix/mobile-touch-controls",
+  "stage": "building",
+  "updated": "2026-08-26T19:35:06Z",
+  "plan": {
+    "acs": 8,
+    "steps": 8,
+    "open": 0,
+    "requirementsHash": "ff69e06250d36b70d1a86378ad2d73ca07ecc8576f3c136f66c7d62eb9517c18"
+  },
+  "log": [
+    "2026-08-26T19:17:12Z 1-plan planned 8 ACs, 8 steps, 0 open questions; branched from main at ddd7c34 after merging PRs #1 and #2",
+    "2026-08-26T19:34:47Z plan approved by user via 1-plan",
+    "2026-08-26T19:35:06Z pipeline launched, diffRange ddd7c34...HEAD (forked from main)"
+  ]
+}
