@@ -1,8 +1,8 @@
 {
   "slug": "landscape-phone-layout",
   "branch": "fix/landscape-phone-layout",
-  "stage": "adjudicated",
-  "updated": "2026-08-26T23:06:55Z",
+  "stage": "published",
+  "updated": "2026-08-26T23:16:41Z",
   "plan": {
     "acs": 8,
     "steps": 7,
@@ -39,6 +39,20 @@
     "escalations": 2,
     "head": "8f059d6"
   },
+  "recheck": {
+    "lens": "judge-diff",
+    "findings": 1,
+    "blockers": 0
+  },
+  "pr": {
+    "url": "https://github.com/AiFirstDevelopment/starter-example-pong/pull/4",
+    "draft": true
+  },
+  "guard": {
+    "clean": false,
+    "violations": 4,
+    "gate": "unknown"
+  },
   "log": [
     "2026-08-26T21:53:10Z 1-plan planned 8 ACs, 7 steps, 0 open questions; branched from main at 42e7afc. Supersedes mobile-touch-controls AC3 (touch-action none -> pinch-zoom) by user decision.",
     "2026-08-26T22:12:02Z plan approved by user via 1-plan",
@@ -46,6 +60,7 @@
     "2026-08-26T22:24:12Z 2-build built 7/7, 5 deviations (1 PLAN DEFECT: flex 1 1 auto distorts the court on a narrow short screen; built as flex 0 1 auto), suite green (41 unit, 43 e2e across chromium + mobile-chrome) on macOS and in the CI Linux image",
     "2026-08-26T22:46:59Z panel complete, adjudication started",
     "2026-08-26T23:06:55Z 3-review round 1, 6 lenses, 9 findings, 0 blockers, read a506694 (recorded by the judge: the scribe is write-only)",
-    "2026-08-26T23:06:55Z 4-quorum adjudicated ready with follow-ups, 7 accepted, 2 rejected, 0 unmet, 2 escalations, suite green on macOS and in the CI Linux image"
+    "2026-08-26T23:06:55Z 4-quorum adjudicated ready with follow-ups, 7 accepted, 2 rejected, 0 unmet, 2 escalations, suite green on macOS and in the CI Linux image",
+    "2026-08-26T23:16:41Z 5-publish opened draft PR #4 https://github.com/AiFirstDevelopment/starter-example-pong/pull/4 \u2014 DRAFT because the quorum guard exited 1 with 4 violations (1 verdict: outcome vs open escalations; 3 evidence: AC2/AC4/AC6 citations not found), quoted verbatim at the top of the PR body; guard gate unknown (branch protection needs admin access to read). Swept up the uncommitted adjudicated state.json and reviews/007-judge-diff.md in 5688e9c."
   ]
 }
