@@ -1,0 +1,8 @@
+{
+  "extraKnownMarketplaces": {
+    "starter": {
+      "source": { "source": "github", "repo": "AiFirstDevelopment/starter" }
+    }
+  },
+  "enabledPlugins": { "quorum@starter": true, "tests@starter": true }
+}
