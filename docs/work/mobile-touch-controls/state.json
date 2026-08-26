@@ -1,8 +1,8 @@
 {
   "slug": "mobile-touch-controls",
   "branch": "fix/mobile-touch-controls",
-  "stage": "reviewed",
-  "updated": "2026-08-26T20:09:19Z",
+  "stage": "adjudicated",
+  "updated": "2026-08-26T20:22:55Z",
   "plan": {
     "acs": 8,
     "steps": 8,
@@ -15,11 +15,43 @@
     "suite": "green",
     "head": "dab7ee0"
   },
+  "review": {
+    "round": 1,
+    "lenses": [
+      "behavior",
+      "correctness",
+      "spec-fidelity",
+      "security",
+      "simplicity",
+      "test-quality"
+    ],
+    "missing": [],
+    "findings": 6,
+    "blockers": 0,
+    "head": "7a5b954"
+  },
+  "verdict": {
+    "outcome": "ready with follow-ups",
+    "suite": "green",
+    "accepted": 2,
+    "rejected": 1,
+    "unmet": 1,
+    "escalations": 2,
+    "head": "e649550"
+  },
   "log": [
     "2026-08-26T19:17:12Z 1-plan planned 8 ACs, 8 steps, 0 open questions; branched from main at ddd7c34 after merging PRs #1 and #2",
     "2026-08-26T19:34:47Z plan approved by user via 1-plan",
     "2026-08-26T19:35:06Z pipeline launched, diffRange ddd7c34...HEAD (forked from main)",
     "2026-08-26T19:50:01Z 2-build built 8/8, 2 deviations, suite green (41 unit, 36 e2e across chromium + mobile-chrome)",
-    "2026-08-26T20:09:19Z panel complete, adjudication started"
-  ]
+    "2026-08-26T20:09:19Z panel complete, adjudication started",
+    "2026-08-26T20:21:16Z 3-review round 1, 6 lenses, 6 findings, 0 blockers, over 7a5b954 (recorded by 4-quorum; the scribe is write-only)",
+    "2026-08-26T20:21:21Z 4-quorum adjudicated ready with follow-ups, 2 escalations, AC5 partial (landscape scroll trap)",
+    "2026-08-26T20:22:55Z 4-quorum head corrected to e649550 after amending the verdict citations; guard clean"
+  ],
+  "guard": {
+    "clean": true,
+    "violations": 0,
+    "gate": "unknown"
+  }
 }
