@@ -1,17 +1,18 @@
 /**
- * Input handling — the only place key and mouse events are read.
+ * Input handling — the only place key and pointer events are read.
  *
  * Movement keys are held, so they are tracked as state the loop samples each
- * tick; starting the game and toggling sound happen on the press itself. The
- * mouse is different in kind: it names a place rather than a direction, so what
- * is tracked is the last place it pointed at, in court coordinates.
+ * tick; starting the game and toggling sound happen on the press itself. A
+ * pointer — a mouse, a finger, a pen — is different in kind: it names a place
+ * rather than a direction, so what is tracked is the last place it pointed at,
+ * in court coordinates.
  */
 
 import { COURT_HEIGHT } from './game/state';
 import type { Input } from './game/step';
 
 export interface ControlHandlers {
-  /** Any key that is not a movement or sound key starts the game, and so does a click on the court. */
+  /** Any key that is not a movement or sound key starts the game, and so does a click or a tap on the court. */
   onStart: () => void;
   onToggleMute: () => void;
 }
@@ -32,6 +33,15 @@ const DOWN_KEYS = new Set(['arrowdown', 's']);
 const MUTE_KEYS = new Set(['m']);
 /** Keys whose default action scrolls the court out from under the player. */
 const SCROLL_KEYS = new Set(['arrowup', 'arrowdown', ' ', 'pageup', 'pagedown']);
+/**
+ * How far a finger may travel and still have tapped, in viewport pixels.
+ *
+ * A finger is never quite still. Ten pixels is the usual allowance and it is
+ * far below the shortest drag that means anything here: half a paddle is 40
+ * court pixels, which is 18 viewport pixels even on the narrowest phone the
+ * court is drawn on.
+ */
+const TAP_SLOP = 10;
 
 /**
  * Where a pointer at viewport `clientY` is pointing, in court pixels.
@@ -48,6 +58,25 @@ const SCROLL_KEYS = new Set(['arrowup', 'arrowdown', ' ', 'pageup', 'pagedown'])
  */
 export function courtY(clientY: number, box: CourtBox): number {
   return ((clientY - box.top) * COURT_HEIGHT) / box.height;
+}
+
+/**
+ * Whether a pointer that has just moved may drive the paddle.
+ *
+ * The mouse may, wherever it is: there is one cursor, it has nothing else to do
+ * on this page, and the paddle has to keep following it once the player asks for
+ * the top or the bottom of the court and the cursor leaves the canvas.
+ *
+ * A finger may not. A drag that started on the hint text is the player scrolling
+ * the page, and taking the paddle with it would leave the mute button
+ * unreachable on a phone, where the page is taller than the screen. So a finger
+ * drives the paddle only when the gesture began on the court — which is what
+ * `startedOnCourt` reports, and it stays true for the whole drag: the browser's
+ * implicit pointer capture keeps a touch's target on the canvas however far the
+ * finger wanders off it.
+ */
+export function drivesPaddle(pointerType: string, startedOnCourt: boolean): boolean {
+  return pointerType === 'mouse' || startedOnCourt;
 }
 
 /**
@@ -68,8 +97,10 @@ export function createControls(
   handlers: ControlHandlers,
 ): Controls {
   const held = new Set<string>();
-  /** Where the mouse last asked for the paddle, or null while the keys have it. */
+  /** Where the pointer last asked for the paddle, or null while the keys have it. */
   let targetY: number | null = null;
+  /** Where a finger landed on the court, while it is still a tap in the making. */
+  let tapping: { id: number; x: number; y: number } | null = null;
 
   const onKeyDown = (event: KeyboardEvent): void => {
     const key = keyName(event);
@@ -91,8 +122,8 @@ export function createControls(
       held.add(key);
       if (!event.repeat) {
         // The most recent input wins, so reaching for the arrows takes the
-        // paddle back off the mouse. Auto-repeat is not a fresh press: a key
-        // held down while the mouse moves would otherwise snatch it back
+        // paddle back off the pointer. Auto-repeat is not a fresh press: a key
+        // held down while the pointer moves would otherwise snatch it back
         // thirty times a second and the two would fight.
         targetY = null;
       }
@@ -115,8 +146,15 @@ export function createControls(
    * On `window`, not on the canvas, so the paddle keeps following a pointer
    * that has left the court — which is where it goes the moment the player
    * asks for the top or the bottom of the court.
+   *
+   * `pointermove` rather than `mousemove`: a mouse, a finger and a pen all
+   * arrive here, all naming a place on the court in the same coordinates, and
+   * `drivesPaddle` decides which of them this one is allowed to name.
    */
-  const onMouseMove = (event: MouseEvent): void => {
+  const onPointerMove = (event: PointerEvent): void => {
+    if (!drivesPaddle(event.pointerType, event.target === court)) {
+      return;
+    }
     const box = court.getBoundingClientRect();
     if (box.height <= 0) {
       // A court with no height on screen has no scale to map through, and
@@ -135,11 +173,58 @@ export function createControls(
     handlers.onStart();
   };
 
+  /**
+   * A finger that lands and lifts without going anywhere: the touch tap.
+   *
+   * A tap is read here rather than left to the `click` the browser synthesizes
+   * from it, because that click is not reliably synthesized. Once a drag has
+   * happened on the court, Chromium on Linux stops emitting it there
+   * altogether — every touch event still arrives, `isPrimary` and all, and no
+   * click ever follows. A player who swipes the court before starting would
+   * then have no way to start it at all, and on a phone there is no key to fall
+   * back on. What the game needs is the gesture, and the gesture is already
+   * here.
+   *
+   * `travelled` is what separates the tap from the drag AC6 requires not to
+   * start the game. The mouse is left to `click`: it has one, it is reliable,
+   * and `start` ignores a second call in the same phase anyway.
+   */
+  const onPointerDown = (event: PointerEvent): void => {
+    if (event.pointerType === 'mouse') {
+      return;
+    }
+    tapping = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  };
+
+  const onPointerUp = (event: PointerEvent): void => {
+    if (tapping === null || event.pointerId !== tapping.id) {
+      return;
+    }
+    const travelled = Math.hypot(event.clientX - tapping.x, event.clientY - tapping.y);
+    tapping = null;
+    if (travelled <= TAP_SLOP) {
+      handlers.onStart();
+    }
+  };
+
+  /** A gesture the browser took for itself never becomes a tap. */
+  const onPointerCancel = (event: PointerEvent): void => {
+    if (tapping !== null && event.pointerId === tapping.id) {
+      tapping = null;
+    }
+  };
+
   target.addEventListener('keydown', onKeyDown);
   target.addEventListener('keyup', onKeyUp);
   target.addEventListener('blur', onBlur);
-  target.addEventListener('mousemove', onMouseMove);
+  target.addEventListener('pointermove', onPointerMove);
   court.addEventListener('click', onClick);
+  // Down on the court, up on the window: a finger that lands on the court and
+  // drifts off it before lifting has still not tapped, and `travelled` should
+  // be the one to say so rather than a missing event.
+  court.addEventListener('pointerdown', onPointerDown);
+  target.addEventListener('pointerup', onPointerUp);
+  target.addEventListener('pointercancel', onPointerCancel);
 
   return {
     input: () => {

@@ -8,7 +8,17 @@
  * score out of the DOM, exactly as they are presented to a player.
  */
 
-import type { Page } from '@playwright/test';
+import { devices, type Page } from '@playwright/test';
+
+/**
+ * The phone the touch tests are driven on.
+ *
+ * It lives here rather than inline in `playwright.config.ts` because the
+ * determinism test builds its own contexts, and those have to be the same phone
+ * as the project the rest of the touch tests run in — a context without
+ * `hasTouch` cannot be touched at all. One definition, imported by both.
+ */
+export const TOUCH_DEVICE = devices['Pixel 5'];
 
 /** One sound the game asked the browser to play. */
 export interface RecordedSound {
@@ -226,6 +236,183 @@ export async function courtBox(page: Page): Promise<Box> {
     ).getBoundingClientRect();
     return { left: rect.left, top: rect.top, height: rect.height };
   });
+}
+
+/** A finger on the screen, put down, dragged about, and lifted. */
+export interface Finger {
+  /** Land the finger at `point`. */
+  down(point: Point): Promise<void>;
+  /** Drag it to `point`, still down. */
+  moveTo(point: Point): Promise<void>;
+  /** Lift it off. */
+  up(): Promise<void>;
+  /** What the page made of the gesture since the finger last landed. */
+  seen(): Promise<PointerTally>;
+}
+
+/** What the page has made of the finger so far. */
+export interface PointerTally {
+  moves: number;
+  /**
+   * Of those, the ones a finger sent. A test that asserts the paddle did *not*
+   * move needs to know one of these arrived, or it is asserting about a gesture
+   * the page never heard.
+   */
+  touchMoves: number;
+  /** The browser took the gesture for a scroll and stopped reporting it. */
+  cancelled: boolean;
+}
+
+/** Have the page count the pointer events it sees, once per page. */
+async function countPointerEvents(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const counted = window as unknown as { __pointer?: PointerTally };
+    if (counted.__pointer !== undefined) {
+      return;
+    }
+    const tally: PointerTally = { moves: 0, touchMoves: 0, cancelled: false };
+    counted.__pointer = tally;
+    // Registered after the game's own listener, so a count that has moved means
+    // the game has already had this event.
+    window.addEventListener('pointermove', (event) => {
+      tally.moves += 1;
+      if (event.pointerType === 'touch') {
+        tally.touchMoves += 1;
+      }
+    });
+    window.addEventListener('pointercancel', () => {
+      tally.cancelled = true;
+    });
+  });
+}
+
+async function pointerTally(page: Page): Promise<PointerTally> {
+  return page.evaluate(
+    () => ({ ...(window as unknown as { __pointer: PointerTally }).__pointer }),
+  );
+}
+
+/**
+ * Wait until the page has seen the finger move.
+ *
+ * The clock is Playwright's and it is held still, but Chromium's touch delivery
+ * runs on the browser's own frames and not on that clock: a move dispatched now
+ * reaches the page a moment later, which is after `runFrames` has already run
+ * the game forward. Left alone the paddle is one move behind every assertion,
+ * and two runs of the same script disagree about where it was.
+ *
+ * Polled from here rather than with `waitForFunction`, because the page's
+ * timers and animation frames are the frozen ones and would never poll. Node's
+ * clock is the real one.
+ *
+ * A gesture the browser decides is a scroll ends in `pointercancel` and sends
+ * nothing further. That is the answer for a drag that began off the court, and
+ * it is an answer, so it ends the wait too.
+ */
+async function seenTheFinger(page: Page, moves: number): Promise<void> {
+  const deadline = Date.now() + 2000;
+  for (;;) {
+    const tally = await pointerTally(page);
+    if (tally.cancelled || tally.moves > moves) {
+      return;
+    }
+    if (Date.now() > deadline) {
+      throw new Error('the page never saw the finger move');
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
+
+/**
+ * A finger, dispatched through CDP.
+ *
+ * `page.touchscreen` can tap and nothing else, and a paddle that follows a
+ * finger is all in the drag. `Input.dispatchTouchEvent` sends the real thing:
+ * genuine pointer events carrying `pointerType: 'touch'`, implicit capture
+ * included, so the game sees what a phone sends it rather than a mouse in
+ * disguise.
+ *
+ * Returned a piece at a time rather than as one gesture because the interesting
+ * assertions are mid-drag — where the paddle is after this move, before the
+ * next one — and frames have to run between them.
+ */
+export async function finger(page: Page): Promise<Finger> {
+  const session = await page.context().newCDPSession(page);
+  await countPointerEvents(page);
+  let down = false;
+
+  return {
+    async down(point: Point): Promise<void> {
+      down = true;
+      await page.evaluate(() => {
+        const tally = (window as unknown as { __pointer: PointerTally }).__pointer;
+        tally.moves = 0;
+        tally.touchMoves = 0;
+        tally.cancelled = false;
+      });
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x: point.x, y: point.y }],
+      });
+    },
+    async moveTo(point: Point): Promise<void> {
+      if (!down) {
+        throw new Error('the finger is not on the screen to move');
+      }
+      const before = (await pointerTally(page)).moves;
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: point.x, y: point.y }],
+      });
+      await seenTheFinger(page, before);
+    },
+    async up(): Promise<void> {
+      if (!down) {
+        throw new Error('the finger is not on the screen to lift');
+      }
+      down = false;
+      // A touchEnd carries the points still down, and this was the only one.
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchEnd',
+        touchPoints: [],
+      });
+    },
+    async seen(): Promise<PointerTally> {
+      return pointerTally(page);
+    },
+  };
+}
+
+/** Land a finger on `from`, drag it to `to`, and lift it. */
+export async function touchDrag(page: Page, from: Point, to: Point): Promise<void> {
+  const hand = await finger(page);
+  await hand.down(from);
+  await hand.moveTo(to);
+  await hand.up();
+}
+
+/**
+ * One computed CSS property of an element on the assembled page.
+ *
+ * Computed rather than declared: it is what the browser resolved after the
+ * whole stylesheet, and it is the value the browser itself acts on when it
+ * decides whether a gesture is the page's to pan with or the game's to play.
+ */
+export async function computedStyle(
+  page: Page,
+  selector: string,
+  property: string,
+): Promise<string> {
+  return page.evaluate(
+    ({ selector, property }) => {
+      const element = document.querySelector(selector);
+      if (element === null) {
+        throw new Error(`nothing on the page matches ${selector}`);
+      }
+      return getComputedStyle(element).getPropertyValue(property);
+    },
+    { selector, property },
+  );
 }
 
 /** An image of the whole court, for asking whether anything moved. */

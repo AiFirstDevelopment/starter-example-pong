@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { courtY } from '../../src/input';
+import { courtY, drivesPaddle } from '../../src/input';
 import { COURT_HEIGHT } from '../../src/game/state';
 
 /** The canvas at its intrinsic size, at the very top of the viewport. */
@@ -41,5 +41,24 @@ describe('courtY', () => {
   it('reports how far below the court a pointer below it is', () => {
     expect(courtY(COURT_HEIGHT + 40, UNSCALED)).toBe(COURT_HEIGHT + 40);
     expect(courtY(400, SCALED)).toBe(600);
+  });
+});
+
+describe('drivesPaddle', () => {
+  it('lets the mouse drive from anywhere on the page', () => {
+    expect(drivesPaddle('mouse', true)).toBe(true);
+    // The paddle has to keep following a cursor that has left the court.
+    expect(drivesPaddle('mouse', false)).toBe(true);
+  });
+
+  it('lets a finger drive only when the gesture began on the court', () => {
+    expect(drivesPaddle('touch', true)).toBe(true);
+    // A drag that started on the hint text is the player scrolling the page.
+    expect(drivesPaddle('touch', false)).toBe(false);
+  });
+
+  it('treats a pen like a finger', () => {
+    expect(drivesPaddle('pen', true)).toBe(true);
+    expect(drivesPaddle('pen', false)).toBe(false);
   });
 });

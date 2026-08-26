@@ -9,6 +9,16 @@
   box-sizing: border-box;
 }
 
+/*
+ * A drag that reaches the end of the page is not an invitation to rubber-band
+ * it or pull it down to refresh — on a phone that is the player losing the
+ * court mid-rally.
+ */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
   padding: 2rem 1rem;
@@ -54,6 +64,12 @@ h1 {
 canvas {
   width: 100%;
   height: auto;
+  /*
+   * A gesture that starts on the court belongs to the game. Without this the
+   * browser claims it first and pans and zooms the page with it, and the paddle
+   * never hears about the finger at all.
+   */
+  touch-action: none;
   background: var(--court);
   border: 1px solid #1e293b;
   border-radius: 4px;
