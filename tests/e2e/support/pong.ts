@@ -34,11 +34,15 @@ export interface Span {
   bottom: number;
 }
 
-/** The canvas's box on screen, in viewport coordinates. */
+/**
+ * The canvas's box on screen, in viewport coordinates.
+ *
+ * No width: the mapping under test is purely vertical, and advertising a
+ * horizontal half would suggest the pointer's x mattered to it.
+ */
 export interface Box {
   left: number;
   top: number;
-  width: number;
   height: number;
 }
 
@@ -181,7 +185,13 @@ export async function ballAt(page: Page): Promise<Point | null> {
   return (await sample(page)).ball;
 }
 
-/** The top and bottom of a paddle, read back off the canvas by its colour. */
+/**
+ * The top and bottom of a paddle, read back off the canvas by its colour.
+ *
+ * `sample` below scans the same two columns at the same threshold, off the
+ * image it is already taking. The two readings have to agree, so a change to
+ * either the paddle's colour or the threshold belongs in both.
+ */
 export async function paddleAt(page: Page, side: 'player' | 'cpu'): Promise<Span> {
   return page.evaluate((column: number) => {
     const canvas = document.getElementById('court') as HTMLCanvasElement;
@@ -214,7 +224,7 @@ export async function courtBox(page: Page): Promise<Box> {
     const rect = (
       document.getElementById('court') as HTMLCanvasElement
     ).getBoundingClientRect();
-    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+    return { left: rect.left, top: rect.top, height: rect.height };
   });
 }
 

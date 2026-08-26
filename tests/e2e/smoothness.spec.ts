@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import {
+  courtBox,
   frameOfSound,
   frameSteps,
   installClock,
@@ -101,4 +102,38 @@ test('AC8: the ball is not smeared across the court on the frame a point is scor
   expect(lastSeen?.ball?.x).toBeLessThan(30);
   // And is waiting on the centre spot, not caught in between.
   expect(Math.abs((samples[scored].ball?.x ?? 0) - 400)).toBeLessThan(10);
+});
+
+test('AC5: a held movement key stays even across a point and the serve after it', async ({
+  page,
+}) => {
+  // This rally loses a point early enough to hold a key across it. The paddles
+  // are not cut by a phase change the way the ball is -- nothing moves them but
+  // their own motion -- so the glide has to carry straight through one.
+  await page.goto('/?seed=9');
+  await page.keyboard.press('Space');
+
+  // Park the paddle near the top with the mouse, so the whole run below happens
+  // in open court rather than against the bottom clamp.
+  const box = await courtBox(page);
+  await page.mouse.move(box.left + 100, Math.round(box.top + box.height * 0.08));
+  await runFrames(page, 50);
+
+  // Then hand it back to the key and watch it glide through the point.
+  await page.keyboard.down('ArrowDown');
+  await runFrames(page, 3);
+  const samples = await recordFrames(page, 40);
+  await page.keyboard.up('ArrowDown');
+
+  const scored = samples.findIndex((entry) => entry.cpuScore === '1');
+  expect(scored).toBeGreaterThan(4);
+  expect(scored).toBeLessThan(samples.length - 4);
+
+  const steps = frameSteps(samples.map((entry) => entry.player.top));
+  expect(Math.min(...steps)).toBeGreaterThan(0);
+  expect(samples[samples.length - 1].player.top).toBeLessThan(390);
+  // Drawing the last tick outright on the frame the phase changes lends the
+  // paddle most of a tick and takes it back on the next frame: 8.8 px then
+  // 4.6 px, either side of the steady 6.72.
+  expect(unevenness(steps)).toBeLessThanOrEqual(1);
 });

@@ -2,7 +2,7 @@
 
 - **Slug:** mouse-and-smooth-paddle
 - **Branch:** feature/mouse-and-smooth-paddle
-- **Status:** built
+- **Status:** adjudicated
 
 ## Intent
 
@@ -299,6 +299,28 @@ The alternative — having `input.ts` look the canvas up by its DOM id — would
 have put knowledge of the page's markup in the input adapter, which is worse.
 One extra argument seemed the smaller price. No acceptance criterion is
 affected.
+
+### Judge's correction to the S5 deviation note (added at adjudication)
+
+The S5 deviation note below is kept as it was written, but two of its claims are
+wrong and the guard it describes has since been narrowed. Recorded here so a
+maintainer reading it is not misled:
+
+- "It only shows on frames that run a single tick, which is why seed 1 [...]
+  happens to hide it" is **false**. Replaying the loop against the compiled
+  `step` for seeds 1-10, every first point lands on a **two-tick** frame. The
+  three numbers the note quotes reproduce exactly (seeds 2, 7, 9 -> x = 351.3,
+  124.8, 156.7), but on two-tick frames. Seed 1 smears just as badly (x = 108.8);
+  it is not used for the guard test because its first point lands at frame 433,
+  outside the 90-frame recording window, whereas seed 7 loses one at frame 70.
+  The guard is needed whenever a phase change lands on the final tick of a frame.
+- Snapping the **whole** state across a phase change was too wide. Nothing moves
+  either paddle but its own travel, so snapping them lent the paddle most of a
+  tick on that frame and took it back on the next -- 8.82 px then 4.62 px against
+  a steady 6.72, which is a 4.20 px variation where AC5 allows 1. `interpolate`
+  now snaps the ball alone and keeps both paddles interpolated, and
+  `tests/e2e/smoothness.spec.ts` gained an AC5 case at seed 9 that holds a key
+  across a scored point. See `docs/work/mouse-and-smooth-paddle/verdict.md`.
 
 ### Deviations
 

@@ -259,3 +259,45 @@ test('AC7: the same seed driven the same way, mouse included, plays out identica
   expect(again).toEqual(first);
   expect(other).not.toEqual(first);
 });
+
+test('AC4: a key held down while the mouse moves does not snatch the paddle back', async ({
+  page,
+}) => {
+  await page.goto('/?seed=1');
+  await page.keyboard.press('Space');
+  await runFrames(page, 3);
+  const box = await courtBox(page);
+
+  // The key goes down first and stays down for the rest of the test.
+  await page.keyboard.down('ArrowDown');
+  await runFrames(page, 5);
+
+  // Then the mouse takes the paddle, with the key still held.
+  const pointAt = downCourt(box, 0.2);
+  await page.mouse.move(box.left + 100, pointAt);
+  await runFrames(page, 2);
+  const fromMouse = await paddleAt(page, 'player');
+  expect(missedBy(fromMouse, box, pointAt)).toBeLessThanOrEqual(1);
+
+  // A key that stays down auto-repeats, and the browser marks those keydowns as
+  // repeats. They are not a fresh press: if they counted as one the paddle would
+  // be snatched off the pointer thirty times a second and the two would fight.
+  await page.evaluate(() => {
+    const seen: boolean[] = [];
+    (window as unknown as { __repeats: boolean[] }).__repeats = seen;
+    window.addEventListener('keydown', (event: KeyboardEvent) => seen.push(event.repeat));
+  });
+  await page.keyboard.down('ArrowDown');
+  await page.keyboard.down('ArrowDown');
+  await page.keyboard.down('ArrowDown');
+  // Guard the premise: without a repeat actually reaching the page this test
+  // would pass whether or not the game distinguishes one from a fresh press.
+  const repeats = await page.evaluate(
+    () => (window as unknown as { __repeats: boolean[] }).__repeats,
+  );
+  expect(repeats).toContain(true);
+
+  await runFrames(page, 20);
+  expect(await paddleAt(page, 'player')).toEqual(fromMouse);
+  await page.keyboard.up('ArrowDown');
+});

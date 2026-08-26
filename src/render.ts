@@ -43,19 +43,23 @@ export function interpolate(
   current: GameState,
   alpha: number,
 ): GameState {
-  if (previous.phase !== current.phase) {
-    // A phase change is a cut, not a movement: the ball is picked up off the
-    // court and put back on the centre spot. Blending across that would draw
-    // it streaking back up the court on the frame a point is scored.
-    return current;
-  }
+  // A phase change is a cut for the ball, not a movement: it is picked up off
+  // the court and put back on the centre spot, and blending across that would
+  // draw it streaking back up the court on the frame a point is scored. The
+  // cut is the ball's alone — nothing moves either paddle but its own travel,
+  // through a serve and a scored point alike — so snapping them too would lend
+  // the paddle most of a tick on that frame and take it back on the next, which
+  // is the judder this function exists to remove.
+  const cut = previous.phase !== current.phase;
   return {
     ...current,
-    ball: {
-      ...current.ball,
-      x: mix(previous.ball.x, current.ball.x, alpha),
-      y: mix(previous.ball.y, current.ball.y, alpha),
-    },
+    ball: cut
+      ? current.ball
+      : {
+          ...current.ball,
+          x: mix(previous.ball.x, current.ball.x, alpha),
+          y: mix(previous.ball.y, current.ball.y, alpha),
+        },
     playerY: mix(previous.playerY, current.playerY, alpha),
     cpuY: mix(previous.cpuY, current.cpuY, alpha),
   };
