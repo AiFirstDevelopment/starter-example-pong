@@ -1,8 +1,8 @@
 {
   "slug": "mouse-and-smooth-paddle",
   "branch": "feature/mouse-and-smooth-paddle",
-  "stage": "adjudicated",
-  "updated": "2026-08-26T17:03:38Z",
+  "stage": "published",
+  "updated": "2026-08-26T17:16:09Z",
   "plan": {
     "acs": 8,
     "steps": 7,
@@ -39,6 +39,21 @@
     "escalations": 3,
     "head": "89aa4c9"
   },
+  "pr": {
+    "url": "https://github.com/AiFirstDevelopment/starter-example-3/pull/2",
+    "number": 2,
+    "draft": true,
+    "base": "feature/single-player-pong"
+  },
+  "recheck": {
+    "findings": 1,
+    "blockers": 0
+  },
+  "guard": {
+    "clean": false,
+    "violations": 1,
+    "gate": "unknown"
+  },
   "log": [
     "2026-08-26T16:00:55Z 1-plan planned 8 ACs, 7 steps, 0 open questions",
     "2026-08-26T16:03:28Z plan approved by user via 1-plan",
@@ -46,6 +61,7 @@
     "2026-08-26T16:29:26Z 2-build built 7/7, 7 deviations (2 PLAN DEFECTs: C1 partly false, C4 false), suite green (38 unit, 25 behavioural)",
     "2026-08-26T16:30:20Z 2-build deviation count corrected to 8 (6 deviations plus 2 PLAN DEFECTs; the earlier 7 undercounted); nothing else changed",
     "2026-08-26T16:53:21Z panel complete, adjudication started",
-    "2026-08-26T17:03:38Z 4-quorum adjudicated ready with follow-ups, 3 escalations, AC1 partly unmet, suite green 38 unit + 27 e2e"
+    "2026-08-26T17:03:38Z 4-quorum adjudicated ready with follow-ups, 3 escalations, AC1 partly unmet, suite green 38 unit + 27 e2e",
+    "2026-08-26T17:16:09Z 5-pr published draft PR #2 (guard 1 violation: verdict outcome vs open escalations; gate unknown, branch protection unreadable), base feature/single-player-pong"
   ]
 }
