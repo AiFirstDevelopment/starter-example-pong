@@ -66,10 +66,16 @@ canvas {
   height: auto;
   /*
    * A gesture that starts on the court belongs to the game. Without this the
-   * browser claims it first and pans and zooms the page with it, and the paddle
-   * never hears about the finger at all.
+   * browser claims it first and pans the page with it, and the paddle never
+   * hears about the finger at all.
+   *
+   * `pinch-zoom` rather than `none`: it withholds exactly the one-finger pan
+   * that would steal the drag, and hands two-finger zoom back to the browser so
+   * a player who wants a closer look at a small court can have one. This
+   * deliberately supersedes AC3 of the `mobile-touch-controls` work item, which
+   * asserted the computed value is flatly `none`.
    */
-  touch-action: none;
+  touch-action: pinch-zoom;
   background: var(--court);
   border: 1px solid #1e293b;
   border-radius: 4px;
@@ -111,4 +117,77 @@ kbd {
   border: 1px solid #1e293b;
   border-radius: 3px;
   background: #131c33;
+}
+
+/*
+ * A phone held sideways.
+ *
+ * Keyed on height alone: a landscape phone is a short screen, and portrait
+ * phones — which already fit — never match. The page stops being a column that
+ * grows past the screen and becomes one exactly a viewport tall: the chrome
+ * shrinks to what it needs and the court takes what is left. Nothing overflows,
+ * so there is no scroll range, and a scroll range that does not exist cannot
+ * strand the score or the mute button below it.
+ */
+@media (max-height: 480px) {
+  :root {
+    /* Shared so the page's height and its padding cannot drift apart. */
+    --page-padding-block: 0.25rem;
+  }
+
+  body {
+    padding: var(--page-padding-block) 0.5rem;
+  }
+
+  .game {
+    height: calc(100dvh - 2 * var(--page-padding-block));
+    gap: 0.25rem;
+  }
+
+  h1 {
+    font-size: 0.9rem;
+    letter-spacing: 0.3em;
+  }
+
+  .scoreboard {
+    font-size: 1.25rem;
+  }
+
+  .status {
+    min-height: 1rem;
+    font-size: 0.75rem;
+  }
+
+  button {
+    padding: 0.15rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  /*
+   * The court takes the height the chrome leaves and keeps its shape while
+   * doing it. A canvas stretches its bitmap to whatever box CSS hands it, so
+   * capping the height alone would squash the court flat; with the ratio
+   * declared, the width comes down with the height and the game stays in
+   * proportion. `min-height: 0` is what lets it shrink at all — a flex item
+   * will not go below its content-based minimum without it.
+   *
+   * It shrinks and never grows. Its basis is the canvas's own 480, and a screen
+   * this query matches has less than that to spare once the chrome has taken
+   * its share, so there is always something to shrink out of. Letting it grow
+   * instead is what squashes it on a narrow screen: the height would fill the
+   * column, the width would ask for 1.667 times that, and `max-width` would cut
+   * the width back on its own and leave the court standing on end.
+   */
+  canvas {
+    flex: 0 1 auto;
+    min-height: 0;
+    width: auto;
+    max-width: 100%;
+    aspect-ratio: 800 / 480;
+  }
+
+  /* A player holding a phone is not reading the keyboard shortcuts. */
+  .hint {
+    display: none;
+  }
 }

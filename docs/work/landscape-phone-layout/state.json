@@ -1,0 +1,17 @@
+{
+  "slug": "landscape-phone-layout",
+  "branch": "fix/landscape-phone-layout",
+  "stage": "building",
+  "updated": "2026-08-26T22:12:02Z",
+  "plan": {
+    "acs": 8,
+    "steps": 7,
+    "open": 0,
+    "requirementsHash": "54390fec30614fcd9aaa12fe82be8e9f0270b02a426efa1c13df7bf8b21999f4"
+  },
+  "log": [
+    "2026-08-26T21:53:10Z 1-plan planned 8 ACs, 7 steps, 0 open questions; branched from main at 42e7afc. Supersedes mobile-touch-controls AC3 (touch-action none -> pinch-zoom) by user decision.",
+    "2026-08-26T22:12:02Z plan approved by user via 1-plan",
+    "2026-08-26T22:12:02Z pipeline launched, diffRange 42e7afc...HEAD (forked from main)"
+  ]
+}

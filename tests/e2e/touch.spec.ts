@@ -1,4 +1,4 @@
-import { expect, test, type Browser } from '@playwright/test';
+import { expect, test, type Browser, type Page } from '@playwright/test';
 
 import {
   TOUCH_DEVICE,
@@ -159,7 +159,15 @@ test('AC3: the court is the game’s to drag, not the browser’s to pan', async
   // page did not move would pass whether or not this fix were here. This is
   // the contract the browser itself acts on, it fails without the fix, and the
   // panning it prevents is checked by hand on a device.
-  expect(await computedStyle(page, '#court', 'touch-action')).toBe('none');
+  //
+  // `pinch-zoom` rather than the `none` this criterion was written with. The
+  // `landscape-phone-layout` work item supersedes that half of it on purpose:
+  // `pinch-zoom` withholds the same one-finger pan — every drag test in this
+  // file goes on passing unchanged, which is what shows it costs nothing — and
+  // gives two-finger zoom back to the browser so a small court can be
+  // magnified. The expectation is relaxed, not weakened: a court left as `auto`
+  // still fails here.
+  expect(await computedStyle(page, '#court', 'touch-action')).toBe('pinch-zoom');
 
   for (const selector of ['html', 'body']) {
     expect(await computedStyle(page, selector, 'overscroll-behavior-x')).toBe('none');
@@ -356,4 +364,174 @@ test('AC8: the same seed driven the same way, touch included, plays out identica
 
   expect(again).toEqual(first);
   expect(other).not.toEqual(first);
+});
+
+/*
+ * The `landscape-phone-layout` work item, whose own criteria are numbered from
+ * one again. Its tests are titled `landscape ACn` so they cannot be read as
+ * the criteria above, which belong to `mobile-touch-controls`.
+ */
+
+/** The shape the court is drawn at, whatever size the page gives it. */
+const COURT_ASPECT = 800 / COURT_HEIGHT;
+
+/** The court's rendered box — both axes, unlike the vertical-only `courtBox`. */
+async function courtSize(page: Page): Promise<{ width: number; height: number }> {
+  return page.evaluate(() => {
+    const rect = (
+      document.getElementById('court') as HTMLCanvasElement
+    ).getBoundingClientRect();
+    return { width: rect.width, height: rect.height };
+  });
+}
+
+/** How far the page runs past the bottom of the screen. */
+async function overflow(page: Page): Promise<number> {
+  return page.evaluate(
+    () => document.documentElement.scrollHeight - window.innerHeight,
+  );
+}
+
+/** How far below the top of an element's box the bottom of the screen is. */
+async function belowTheFold(page: Page, selector: string): Promise<number> {
+  return page.evaluate((selector: string) => {
+    const element = document.querySelector(selector);
+    if (element === null) {
+      throw new Error(`nothing on the page matches ${selector}`);
+    }
+    const rect = element.getBoundingClientRect();
+    return Math.max(rect.bottom - window.innerHeight, -rect.top, 0);
+  }, selector);
+}
+
+test.describe('a phone held sideways', () => {
+  // A viewport override rather than a project of its own: `hasTouch` comes from
+  // `mobile-chrome`, and reshaping the viewport inside it keeps the finger.
+  // A Pixel 5 turned on its side, with the browser's own chrome taken off.
+  test.use({ viewport: { width: 802, height: 293 } });
+
+  test('landscape AC1: the whole page fits the screen', async ({ page }) => {
+    await page.goto('/?seed=1');
+
+    // The premise: a screen short enough for the landscape layout to be the
+    // one under test. Without this the assertion below would pass on any tall
+    // viewport that happened to fit, and say nothing about a phone on its side.
+    expect(await page.evaluate(() => window.innerHeight)).toBeLessThanOrEqual(480);
+
+    // 448 px of it hung below the screen before this work item.
+    expect(await overflow(page)).toBeLessThanOrEqual(0);
+  });
+
+  test('landscape AC2: the score, the status and the mute button are all on screen', async ({
+    page,
+  }) => {
+    await page.goto('/?seed=1');
+
+    // The mute button was the worst of it — stranded at page y 633 in a 293 px
+    // viewport, with no way to scroll down to it.
+    for (const selector of ['.scoreboard', '#player-score', '#cpu-score', '#status', '#mute']) {
+      expect(await belowTheFold(page, selector)).toBe(0);
+    }
+  });
+
+  test('landscape AC3: the court is drawn in proportion, not stretched to fit', async ({
+    page,
+  }) => {
+    await page.goto('/?seed=1');
+    const court = await courtSize(page);
+
+    // Capping the height and leaving the width alone gives about 2.7 here — a
+    // court stretched flat, because a canvas paints its bitmap across whatever
+    // box CSS hands it. The tolerance is the criterion's own 0.02, which is far
+    // wider than the pixel of border that keeps the measured ratio off 1.667.
+    expect(Math.abs(court.width / court.height - COURT_ASPECT)).toBeLessThanOrEqual(0.02);
+
+    // And it really has been squeezed. Left alone the court is drawn 463 tall
+    // in a 293 px screen, in proportion and mostly off the bottom — which would
+    // satisfy the ratio above for entirely the wrong reason.
+    expect(court.height).toBeLessThan(COURT_HEIGHT / 2);
+  });
+
+  test('landscape AC4: there is no scroll range to be trapped in', async ({ page }) => {
+    await page.goto('/?seed=1');
+
+    // Not a gesture that escapes a scroll range: with the page fitting there is
+    // no range to escape, and a drag that found the page unmoved would pass
+    // whether or not anything here worked. This asks the page to scroll by the
+    // whole height of the old overflow, in the one way that cannot be refused,
+    // and finds there is nowhere for it to go.
+    await page.evaluate(() => window.scrollTo(0, 500));
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
+  test('landscape AC8: the paddle still lands under the finger on the smaller court', async ({
+    page,
+  }) => {
+    await page.goto('/?seed=1');
+    await page.keyboard.press('Space');
+    await runFrames(page, 3);
+
+    const box = await courtBox(page);
+    // Smaller again than the 217 px the same phone draws it at upright, so the
+    // finger is being read through a box that has moved as well as shrunk.
+    expect(box.height).toBeLessThan(217);
+
+    const x = acrossCourt(box);
+    const hand = await finger(page);
+    await hand.down({ x, y: downCourt(box, 0.2) });
+
+    for (const fraction of [0.75, 0.4, 0.9]) {
+      const clientY = downCourt(box, fraction);
+      await hand.moveTo({ x, y: clientY });
+      await runFrames(page, 2);
+
+      expect(missedBy(await paddleAt(page, 'player'), box, clientY)).toBeLessThanOrEqual(1);
+    }
+
+    await hand.up();
+  });
+});
+
+/*
+ * And the phone the right way up, which was never the problem: the landscape
+ * rules are keyed on height alone, so a portrait phone does not match them at
+ * all. Asserted rather than assumed, because a media query written against the
+ * wrong axis would quietly reshape the layout that already worked.
+ */
+
+/** The court, to the pixel, on a phone the landscape rules must not touch. */
+async function expectPortraitIsUntouched(
+  page: Page,
+  court: { width: number; height: number },
+): Promise<void> {
+  await page.goto('/?seed=1');
+
+  // The hint is the visible half of the compaction: still here means the
+  // landscape rules did not apply, so the sizes below are the ones they leave
+  // alone rather than ones they happen to agree with.
+  await expect(page.locator('.hint')).toBeVisible();
+
+  const rendered = await courtSize(page);
+  expect(Math.round(rendered.width)).toBe(court.width);
+  expect(Math.round(rendered.height)).toBe(court.height);
+
+  expect(await overflow(page)).toBeLessThanOrEqual(0);
+}
+
+test('landscape AC5: a Pixel 5 upright draws the court exactly as it did', async ({
+  page,
+}) => {
+  await expectPortraitIsUntouched(page, { width: 361, height: 217 });
+});
+
+test.describe('a smaller phone upright', () => {
+  // An iPhone SE's screen, kept in the phone project this spec runs in: the
+  // finger comes from `mobile-chrome`, and only the shape of the screen changes.
+  test.use({ viewport: { width: 320, height: 568 } });
+
+  test('landscape AC5: an iPhone SE draws the court exactly as it did', async ({
+    page,
+  }) => {
+    await expectPortraitIsUntouched(page, { width: 288, height: 174 });
+  });
 });
