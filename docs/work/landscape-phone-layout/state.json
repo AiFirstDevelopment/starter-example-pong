@@ -1,17 +1,24 @@
 {
   "slug": "landscape-phone-layout",
   "branch": "fix/landscape-phone-layout",
-  "stage": "building",
-  "updated": "2026-08-26T22:12:02Z",
+  "stage": "built",
+  "updated": "2026-08-26T22:24:12Z",
   "plan": {
     "acs": 8,
     "steps": 7,
     "open": 0,
     "requirementsHash": "54390fec30614fcd9aaa12fe82be8e9f0270b02a426efa1c13df7bf8b21999f4"
   },
+  "build": {
+    "stepsDone": 7,
+    "deviations": 5,
+    "suite": "green",
+    "head": "45c8bcb"
+  },
   "log": [
     "2026-08-26T21:53:10Z 1-plan planned 8 ACs, 7 steps, 0 open questions; branched from main at 42e7afc. Supersedes mobile-touch-controls AC3 (touch-action none -> pinch-zoom) by user decision.",
     "2026-08-26T22:12:02Z plan approved by user via 1-plan",
-    "2026-08-26T22:12:02Z pipeline launched, diffRange 42e7afc...HEAD (forked from main)"
+    "2026-08-26T22:12:02Z pipeline launched, diffRange 42e7afc...HEAD (forked from main)",
+    "2026-08-26T22:24:12Z 2-build built 7/7, 5 deviations (1 PLAN DEFECT: flex 1 1 auto distorts the court on a narrow short screen; built as flex 0 1 auto), suite green (41 unit, 43 e2e across chromium + mobile-chrome) on macOS and in the CI Linux image"
   ]
 }
