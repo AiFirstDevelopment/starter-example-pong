@@ -1,17 +1,25 @@
 {
   "slug": "mouse-and-smooth-paddle",
   "branch": "feature/mouse-and-smooth-paddle",
-  "stage": "building",
-  "updated": "2026-08-26T16:03:48Z",
+  "stage": "built",
+  "updated": "2026-08-26T16:30:20Z",
   "plan": {
     "acs": 8,
     "steps": 7,
     "open": 0,
     "requirementsHash": "61cef3123a9f94997e1fc564cf1e8c90382d16682aa66ea7787578c104a063b0"
   },
+  "build": {
+    "stepsDone": 7,
+    "deviations": 8,
+    "suite": "green",
+    "head": "9e7725f"
+  },
   "log": [
     "2026-08-26T16:00:55Z 1-plan planned 8 ACs, 7 steps, 0 open questions",
     "2026-08-26T16:03:28Z plan approved by user via 1-plan",
-    "2026-08-26T16:03:48Z pipeline launched via /quorum:1-plan, diffRange 48e080f...HEAD (forked from feature/single-player-pong)"
+    "2026-08-26T16:03:48Z pipeline launched via /quorum:1-plan, diffRange 48e080f...HEAD (forked from feature/single-player-pong)",
+    "2026-08-26T16:29:26Z 2-build built 7/7, 7 deviations (2 PLAN DEFECTs: C1 partly false, C4 false), suite green (38 unit, 25 behavioural)",
+    "2026-08-26T16:30:20Z 2-build deviation count corrected to 8 (6 deviations plus 2 PLAN DEFECTs; the earlier 7 undercounted); nothing else changed"
   ]
 }
