@@ -2,7 +2,7 @@
 
 - **Slug:** single-player-pong
 - **Branch:** feature/single-player-pong
-- **Status:** approved
+- **Status:** built
 
 ## Intent
 
@@ -239,13 +239,16 @@ no production code gains a hook that exists only for tests.
   scores regularly. `CPU_SPEED` is therefore 160 px/s. The tracking rule the
   plan describes — current ball position, dead zone, no randomness — is
   unchanged.
-- **S8 addition — a fixed clock start.** Playwright schedules faked animation
-  frames on a 16 ms grid measured from the instant the clock is installed, and
-  `page.clock.install()` starts from the wall clock. Two runs therefore sampled
-  the same rally at slightly different moments and AC10's comparison failed on
-  sub-frame drift even though the simulation was identical. The tests install
-  the clock at a fixed instant (`tests/e2e/support/pong.ts`), which is what
-  makes the two loads comparable frame for frame. Production code is unaffected.
+- **S8 addition — the faked clock has to be paused, not just installed.**
+  `page.clock.install()` leaves the clock running at the speed of the real one,
+  so frames kept arriving between one assertion and the next: the number of
+  frames a page had seen depended on how long it took to load and how long each
+  assertion took. AC10 failed intermittently on that drift — the same rally,
+  sampled at different moments. The tests now install the clock at a fixed
+  instant and immediately `pauseAt` it (`installClock` in
+  `tests/e2e/support/pong.ts`), so time moves only when a test asks it to. Four
+  consecutive full runs after the change were identical. Production code is
+  unaffected. This is worth knowing for any later work item that uses the clock.
 - **S8 addition — `@types/node`.** `npm run build` typechecks
   `playwright.config.ts`, which reads `process.env`, so `@types/node` is a dev
   dependency and `node` is in the tsconfig `types` list.
@@ -271,5 +274,12 @@ no production code gains a hook that exists only for tests.
   the keyboard-only non-goal; the button exists so the control is visible and
   reachable, carries `aria-pressed`, and blurs itself after a click so the next
   key press does not re-activate it. `M` does not also start the game.
-- **Left out deliberately:** no rally speed-up, no CI workflow, no deployment —
-  none are in the plan, and the last two are explicit non-goals.
+- **AC1 needed the court drawn at load.** With the clock paused, nothing is
+  drawn until a frame runs, and AC1 is about what the page shows *on load*.
+  `main.ts` therefore renders once before starting the animation loop, which is
+  what a player sees too — a blank canvas until the first frame is a real, if
+  brief, flaw.
+- **Left out deliberately:** no rally speed-up, no CI workflow, no deployment,
+  and no `.claude/skills/run-regression-tests/SKILL.md` recipe file — none are
+  in the plan, the middle two are explicit non-goals, and the README already
+  carries the commands (S9).
