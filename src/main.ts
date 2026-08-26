@@ -123,4 +123,7 @@ function frame(now: number): void {
 showScore();
 showStatus();
 showMute();
+// Draw the still court straight away, rather than leaving a blank canvas until
+// the first animation frame arrives.
+render(context, state);
 window.requestAnimationFrame(frame);
