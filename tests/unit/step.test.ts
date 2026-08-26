@@ -72,6 +72,30 @@ describe('walls', () => {
     expect(state.ball.y).toBe(COURT_HEIGHT - BALL_RADIUS);
   });
 
+  it('resolves a corner strike as the wall bounce alone', () => {
+    // Into the bottom-left corner, with the player's paddle parked there: the
+    // wall settles the tick, and the paddle answers on the next one. Both at
+    // once would sound two tones together and throw the reflection away.
+    const start = rally(
+      {
+        x: PLAYER_X + PADDLE_WIDTH + BALL_RADIUS + 2,
+        y: COURT_HEIGHT - BALL_RADIUS - 1,
+        vx: -300,
+        vy: 200,
+      },
+      { playerY: COURT_HEIGHT - PADDLE_HEIGHT },
+    );
+
+    const first = step(start, TICK_MS, NO_INPUT);
+    expect(kinds(first.events)).toEqual(['wall-hit']);
+    // Travelling away from the floor it just struck, not back into it.
+    expect(first.state.ball.vy).toBeLessThan(0);
+
+    const second = step(first.state, TICK_MS, NO_INPUT);
+    expect(kinds(second.events)).toEqual(['paddle-hit']);
+    expect(second.state.ball.vx).toBeGreaterThan(0);
+  });
+
   it('leaves the ball alone in the middle of the court', () => {
     const start = rally({ y: COURT_HEIGHT / 2, vx: 0, vy: -BALL_SPEED });
     const { events } = step(start, TICK_MS, NO_INPUT);

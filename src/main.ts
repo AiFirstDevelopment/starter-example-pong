@@ -7,6 +7,7 @@
 import { createAudio, soundFor } from './audio';
 import { createKeyboard } from './input';
 import { render } from './render';
+import { statusText } from './status';
 import { readSeed } from './game/rng';
 import { createState, startGame, type GameState } from './game/state';
 import { step, type GameEvent } from './game/step';
@@ -47,14 +48,7 @@ function showScore(): void {
 }
 
 function showStatus(): void {
-  if (state.phase === 'idle') {
-    status.textContent = 'Press any key to start';
-  } else if (state.phase === 'game-over') {
-    const winner = state.winner === 'player' ? 'You win!' : 'Computer wins!';
-    status.textContent = `${winner} Press any key to play again`;
-  } else {
-    status.textContent = '';
-  }
+  status.textContent = statusText(state);
 }
 
 function showMute(): void {

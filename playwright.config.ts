@@ -17,7 +17,10 @@ export default defineConfig({
     // The tests drive the built app, the same bundle a player would load.
     command: 'npm run build && npm run preview',
     url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
+    // Never reuse a server someone left running: the build is part of this
+    // command, so a reused server means the suite passes against whatever was
+    // last built rather than against the source in front of it.
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

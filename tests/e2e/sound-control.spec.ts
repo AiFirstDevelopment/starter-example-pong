@@ -1,6 +1,14 @@
 import { expect, test } from '@playwright/test';
 
-import { installClock, recordSound, runFrames, score, sounds } from './support/pong';
+import {
+  installClock,
+  paddleStrikes,
+  recordFrames,
+  recordSound,
+  runFrames,
+  score,
+  sounds,
+} from './support/pong';
 
 test('AC9: muting silences all three events while the rally carries on', async ({
   page,
@@ -18,8 +26,10 @@ test('AC9: muting silences all three events while the rally carries on', async (
   await expect(mute).toHaveAttribute('aria-pressed', 'true');
   await expect(mute).toHaveText('Sound off');
 
-  // Long enough for a wall bounce, a ball off the court and the next serve.
-  await runFrames(page, 220);
+  // Long enough for a wall bounce, a ball off the court, the next serve and
+  // the strike that returns it -- all three events, none of them heard.
+  const muted = await recordFrames(page, 260);
+  expect(paddleStrikes(muted)).toBeGreaterThan(0);
   expect(await sounds(page)).toHaveLength(1);
   expect(await score(page)).toEqual({ player: '0', cpu: '1' });
 

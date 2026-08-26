@@ -71,6 +71,8 @@ test('AC4: a paddle strike plays the paddle sound and nothing else, and turns th
   expect(played[0]).toMatchObject(PADDLE_SOUND);
   expect(played[0].frequencyStart).not.toBe(WALL_SOUND.frequencyStart);
   expect(played[0].type).not.toBe(OUT_OF_PLAY_SOUND.type);
+  // Scheduled and audible: a tone wired to nothing is silence.
+  expect(played[0].connectedToDestination).toBe(true);
 
   expect(travel(samples, hit - 6, hit - 1).x).toBeGreaterThan(0);
   expect(travel(samples, hit + 1, hit + 6).x).toBeLessThan(0);
@@ -103,6 +105,10 @@ test('AC6: the ball leaving the court plays a third sound, unlike the other two'
 
   const [paddle, wall, out] = await sounds(page);
   expect(out).toMatchObject(OUT_OF_PLAY_SOUND);
+
+  for (const played of [paddle, wall, out]) {
+    expect(played.connectedToDestination).toBe(true);
+  }
 
   // Different in timbre, in pitch and in length from both of the others.
   for (const other of [paddle, wall]) {

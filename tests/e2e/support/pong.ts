@@ -17,6 +17,8 @@ export interface RecordedSound {
   frequencyEnd?: number;
   gainStart?: number;
   gainEnd?: number;
+  /** Whether this tone was wired through to the context's destination. */
+  connectedToDestination?: boolean;
   startAt: number;
   stopAt: number;
   durationMs: number;
@@ -112,6 +114,9 @@ export async function recordSound(page: Page): Promise<void> {
               record.gainStart = target.record.gainStart;
               record.gainEnd = target.record.gainEnd;
               target.record.owner = record;
+              if (target.record.reachesDestination === true) {
+                record.connectedToDestination = true;
+              }
             }
             return target;
           },
@@ -133,7 +138,17 @@ export async function recordSound(page: Page): Promise<void> {
         return {
           record,
           gain: param(record, 'gain'),
-          connect(target: unknown) {
+          // A tone nobody can hear is scheduled exactly like one they can, so
+          // the graph is followed too: reaching the destination is the part
+          // that makes a sound a sound.
+          connect(target: { kind?: string }) {
+            if (target && target.kind === 'destination') {
+              record.reachesDestination = true;
+              const owner = record.owner as Record<string, unknown> | undefined;
+              if (owner) {
+                owner.connectedToDestination = true;
+              }
+            }
             return target;
           },
           disconnect() {},
@@ -155,34 +170,7 @@ export async function sounds(page: Page): Promise<RecordedSound[]> {
 
 /** Where the ball is, read back off the canvas by its colour. */
 export async function ballAt(page: Page): Promise<Point | null> {
-  return page.evaluate(() => {
-    const canvas = document.getElementById('court') as HTMLCanvasElement;
-    const context = canvas.getContext('2d');
-    if (context === null) {
-      return null;
-    }
-    const { data, width, height } = context.getImageData(
-      0,
-      0,
-      canvas.width,
-      canvas.height,
-    );
-    let sumX = 0;
-    let sumY = 0;
-    let found = 0;
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const i = (y * width + x) * 4;
-        // The ball is the only amber thing on the court.
-        if (data[i] > 200 && data[i + 1] > 150 && data[i + 1] < 240 && data[i + 2] < 160) {
-          sumX += x;
-          sumY += y;
-          found += 1;
-        }
-      }
-    }
-    return found === 0 ? null : { x: sumX / found, y: sumY / found };
-  });
+  return (await sample(page)).ball;
 }
 
 /** The top and bottom of a paddle, read back off the canvas by its colour. */
@@ -291,4 +279,43 @@ async function sample(page: Page): Promise<Omit<Sample, 'frame'>> {
       cpuScore,
     };
   });
+}
+
+/**
+ * How many times the ball turned around at a paddle across these samples.
+ *
+ * A strike is the only thing that reverses the ball horizontally, and the trail
+ * shows it whether or not a sound announced it — which is what lets a muted
+ * stretch be checked for the strike it silenced. A ball that vanishes off the
+ * court and reappears on the centre spot has been served, not struck, so the
+ * jump breaks the run rather than counting as a reversal.
+ */
+export function paddleStrikes(samples: Sample[]): number {
+  const SERVE_JUMP = 20;
+  let strikes = 0;
+  let previous: Point | null = null;
+  let heading = 0;
+
+  for (const entry of samples) {
+    const ball = entry.ball;
+    if (ball === null) {
+      previous = null;
+      heading = 0;
+      continue;
+    }
+    if (previous !== null) {
+      const dx = ball.x - previous.x;
+      if (dx !== 0 && Math.abs(dx) < SERVE_JUMP) {
+        const direction = Math.sign(dx);
+        if (heading !== 0 && direction !== heading) {
+          strikes += 1;
+        }
+        heading = direction;
+      } else {
+        heading = 0;
+      }
+    }
+    previous = ball;
+  }
+  return strikes;
 }

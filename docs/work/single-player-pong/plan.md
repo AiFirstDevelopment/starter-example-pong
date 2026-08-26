@@ -2,7 +2,7 @@
 
 - **Slug:** single-player-pong
 - **Branch:** feature/single-player-pong
-- **Status:** built
+- **Status:** adjudicated
 
 ## Intent
 
@@ -279,6 +279,20 @@ no production code gains a hook that exists only for tests.
   `main.ts` therefore renders once before starting the animation loop, which is
   what a player sees too — a blank canvas until the first frame is a real, if
   brief, flaw.
+- **Judge's correction to the C3 note (adjudication).** Both halves of C3 are
+  wrong, not just the cache path. Chromium revision 1234 — the revision
+  `playwright-core` 1.62.1 resolves to — was already installed at
+  `~/Library/Caches/ms-playwright/chromium-1234` on Aug 25, the day before this
+  work item started, so `npx playwright install chromium` was a no-op that added
+  only a `.links` entry. A later work item on this machine should not budget for
+  a browser download; the install command is still worth keeping in the README
+  for a machine that has none.
+- **Judge's correction to the S1/S2 and S3/S5 sequencing notes (adjudication).**
+  Those notes describe commit boundaries this branch does not have. `1ebc96c`
+  carries S1 through S7 — every source file and all three unit-test files — with
+  S8 in `6dcb588` and the plan update in `0e12bda`. The sequencing was collapsed
+  much further than the notes imply, so a defect in the game cannot be bisected
+  to a step.
 - **Left out deliberately:** no rally speed-up, no CI workflow, no deployment,
   and no `.claude/skills/run-regression-tests/SKILL.md` recipe file — none are
   in the plan, the middle two are explicit non-goals, and the README already

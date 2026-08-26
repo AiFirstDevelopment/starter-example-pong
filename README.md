@@ -9,7 +9,7 @@ told apart by ear without looking at the screen.
 
 | Key | Does |
 |---|---|
-| any key | serve, and start a new game once one has been won |
+| any key except `M` | serve, and start a new game once one has been won |
 | `↑` / `W` | move your paddle up |
 | `↓` / `S` | move your paddle down |
 | `M` | mute and unmute — the button under the court does the same |

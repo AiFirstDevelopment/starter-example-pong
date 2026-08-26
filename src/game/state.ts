@@ -60,7 +60,7 @@ export interface GameState {
 
 const CENTRED_PADDLE_Y = (COURT_HEIGHT - PADDLE_HEIGHT) / 2;
 
-function centredBall(): Ball {
+export function centredBall(): Ball {
   return { x: COURT_WIDTH / 2, y: COURT_HEIGHT / 2, vx: 0, vy: 0 };
 }
 
@@ -120,8 +120,7 @@ export function serve(state: GameState): GameState {
     ...state,
     phase: 'rally',
     ball: {
-      x: COURT_WIDTH / 2,
-      y: COURT_HEIGHT / 2,
+      ...centredBall(),
       vx: towards * BALL_SPEED * Math.cos(radians),
       vy: BALL_SPEED * Math.sin(radians),
     },

@@ -1,17 +1,21 @@
 {
   "slug": "single-player-pong",
   "branch": "feature/single-player-pong",
-  "stage": "building",
-  "updated": "2026-08-26T13:48:45Z",
+  "stage": "reviewed",
+  "updated": "2026-08-26T14:44:08Z",
   "plan": {
     "acs": 10,
     "steps": 9,
     "open": 0,
     "requirementsHash": "e259861ba322abe0a71c5fbc24c9f61ee393f761342eb5f51d7aab3c448e5036"
   },
+  "build": {
+    "stepsDone": 9,
+    "deviations": 8,
+    "suite": "green",
+    "head": "0e12bda"
+  },
   "log": [
-    "2026-08-26T12:28:17Z pipeline approved by user, starting unattended run (re-run after attempt 1 discarded)",
-    "2026-08-26T12:28:22Z pipeline launched",
     "2026-08-26T12:44:39Z run stopped by user mid-build (S1-S7 committed, S8-S9 not run, no reviews); branch reset to fork point, approval gate re-armed. Build preserved on branch attempt-2-build. Awaiting new pipeline version.",
     "2026-08-26T12:49:47Z plan approved by user via 1-plan",
     "2026-08-26T13:01:55Z pipeline launched (attempt 3) via /quorum:pipeline, diffRange 4644a71...HEAD",
@@ -21,6 +25,8 @@
     "2026-08-26T13:34:22Z pipeline launched (attempt 4) via /quorum:pipeline, diffRange 4644a71...HEAD",
     "2026-08-26T13:36:28Z attempt 4 stopped by user immediately after launch; builder produced nothing (no commits, no files, no steps ticked, no reviews). Nothing to preserve or discard. Approval reset, gate re-armed.",
     "2026-08-26T13:48:38Z pipeline approved by user, starting unattended run (attempt 5; attempts 1-4 discarded or stopped before any review ran)",
-    "2026-08-26T13:48:45Z pipeline launched (attempt 5) via /quorum:pipeline, diffRange 4644a71...HEAD"
+    "2026-08-26T13:48:45Z pipeline launched (attempt 5) via /quorum:pipeline, diffRange 4644a71...HEAD",
+    "2026-08-26T14:22:29Z 2-build built 9/9, 8 deviations, suite green (23 unit, 13 behavioural)",
+    "2026-08-26T14:44:08Z panel complete, adjudication started"
   ]
 }

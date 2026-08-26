@@ -21,6 +21,7 @@ import {
   PLAYER_X,
   WINNING_SCORE,
   beginServe,
+  centredBall,
   serve,
   type Ball,
   type GameState,
@@ -106,14 +107,28 @@ export function step(state: GameState, dtMs: number, input: Input): StepResult {
   next.ball.x += next.ball.vx * dt;
   next.ball.y += next.ball.vy * dt;
 
+  let bouncedOffWall = false;
   if (next.ball.y - BALL_RADIUS <= 0 && next.ball.vy < 0) {
     next.ball.y = BALL_RADIUS;
     next.ball.vy = -next.ball.vy;
     events.push({ kind: 'wall-hit', edge: 'top' });
+    bouncedOffWall = true;
   } else if (next.ball.y + BALL_RADIUS >= COURT_HEIGHT && next.ball.vy > 0) {
     next.ball.y = COURT_HEIGHT - BALL_RADIUS;
     next.ball.vy = -next.ball.vy;
     events.push({ kind: 'wall-hit', edge: 'bottom' });
+    bouncedOffWall = true;
+  }
+
+  // One collision settles a tick, as the plan's flowchart has it. Falling
+  // through to the paddle test would throw the reflection away — a paddle
+  // bounce derives vy from the contact point alone, sending the ball straight
+  // back into the wall it just left — and would sound a wall tone and a paddle
+  // tone together, which AC4 rules out. Nothing is missed: the ball covers at
+  // most 3.2 px a tick against a 26 px strike window, so a corner strike simply
+  // lands on the next tick.
+  if (bouncedOffWall) {
+    return { state: next, events };
   }
 
   const hitPlayer =
@@ -149,7 +164,7 @@ export function step(state: GameState, dtMs: number, input: Input): StepResult {
       if (next.score[scorer] >= WINNING_SCORE) {
         next.phase = 'game-over';
         next.winner = scorer;
-        next.ball = { x: COURT_WIDTH / 2, y: COURT_HEIGHT / 2, vx: 0, vy: 0 };
+        next.ball = centredBall();
         events.push({ kind: 'game-over', winner: scorer });
       } else {
         return { state: beginServe(next), events };
