@@ -4,5 +4,12 @@
       "source": { "source": "github", "repo": "AiFirstDevelopment/starter" }
     }
   },
-  "enabledPlugins": { "quorum@starter": true, "tests@starter": true }
+  "enabledPlugins": { "quorum@starter": true, "tests@starter": true },
+  "permissions": {
+    "allow": [
+      "Bash(gh pr ready *)",
+      "Bash(gh pr merge *)",
+      "Bash(gh pr edit *)"
+    ]
+  }
 }
