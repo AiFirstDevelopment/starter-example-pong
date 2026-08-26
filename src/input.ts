@@ -33,6 +33,15 @@ const DOWN_KEYS = new Set(['arrowdown', 's']);
 const MUTE_KEYS = new Set(['m']);
 /** Keys whose default action scrolls the court out from under the player. */
 const SCROLL_KEYS = new Set(['arrowup', 'arrowdown', ' ', 'pageup', 'pagedown']);
+/**
+ * How far a finger may travel and still have tapped, in viewport pixels.
+ *
+ * A finger is never quite still. Ten pixels is the usual allowance and it is
+ * far below the shortest drag that means anything here: half a paddle is 40
+ * court pixels, which is 18 viewport pixels even on the narrowest phone the
+ * court is drawn on.
+ */
+const TAP_SLOP = 10;
 
 /**
  * Where a pointer at viewport `clientY` is pointing, in court pixels.
@@ -90,6 +99,8 @@ export function createControls(
   const held = new Set<string>();
   /** Where the pointer last asked for the paddle, or null while the keys have it. */
   let targetY: number | null = null;
+  /** Where a finger landed on the court, while it is still a tap in the making. */
+  let tapping: { id: number; x: number; y: number } | null = null;
 
   const onKeyDown = (event: KeyboardEvent): void => {
     const key = keyName(event);
@@ -156,12 +167,51 @@ export function createControls(
   /**
    * Moving the mouse is not a gesture a browser will start an `AudioContext`
    * from, so without this a mouse-only player has a game they cannot start and
-   * would not hear if they could. A tap on the court arrives here too — the
-   * browser synthesizes the click from it — so a phone starts the game the same
-   * way and unlocks the sound on the same gesture.
+   * would not hear if they could.
    */
   const onClick = (): void => {
     handlers.onStart();
+  };
+
+  /**
+   * A finger that lands and lifts without going anywhere: the touch tap.
+   *
+   * A tap is read here rather than left to the `click` the browser synthesizes
+   * from it, because that click is not reliably synthesized. Once a drag has
+   * happened on the court, Chromium on Linux stops emitting it there
+   * altogether — every touch event still arrives, `isPrimary` and all, and no
+   * click ever follows. A player who swipes the court before starting would
+   * then have no way to start it at all, and on a phone there is no key to fall
+   * back on. What the game needs is the gesture, and the gesture is already
+   * here.
+   *
+   * `travelled` is what separates the tap from the drag AC6 requires not to
+   * start the game. The mouse is left to `click`: it has one, it is reliable,
+   * and `start` ignores a second call in the same phase anyway.
+   */
+  const onPointerDown = (event: PointerEvent): void => {
+    if (event.pointerType === 'mouse') {
+      return;
+    }
+    tapping = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  };
+
+  const onPointerUp = (event: PointerEvent): void => {
+    if (tapping === null || event.pointerId !== tapping.id) {
+      return;
+    }
+    const travelled = Math.hypot(event.clientX - tapping.x, event.clientY - tapping.y);
+    tapping = null;
+    if (travelled <= TAP_SLOP) {
+      handlers.onStart();
+    }
+  };
+
+  /** A gesture the browser took for itself never becomes a tap. */
+  const onPointerCancel = (event: PointerEvent): void => {
+    if (tapping !== null && event.pointerId === tapping.id) {
+      tapping = null;
+    }
   };
 
   target.addEventListener('keydown', onKeyDown);
@@ -169,6 +219,12 @@ export function createControls(
   target.addEventListener('blur', onBlur);
   target.addEventListener('pointermove', onPointerMove);
   court.addEventListener('click', onClick);
+  // Down on the court, up on the window: a finger that lands on the court and
+  // drifts off it before lifting has still not tapped, and `travelled` should
+  // be the one to say so rather than a missing event.
+  court.addEventListener('pointerdown', onPointerDown);
+  target.addEventListener('pointerup', onPointerUp);
+  target.addEventListener('pointercancel', onPointerCancel);
 
   return {
     input: () => {
