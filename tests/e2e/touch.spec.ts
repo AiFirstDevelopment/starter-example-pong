@@ -219,6 +219,15 @@ test('AC5: a gesture that starts off the court is the page’s, not the paddle�
     expect(await paddleAt(page, 'player')).toEqual(before);
   }
 
+  // The premise, asserted rather than assumed. Chromium delivers the first move
+  // and then rules the gesture a scroll and sends `pointercancel`, after which
+  // nothing further arrives — so everything above rests on that one delivered
+  // move. Were the cancel ever to come first instead, this test would be
+  // asserting that a paddle no gesture ever reached did not move: it would stay
+  // green with `drivesPaddle` letting every pointer through, and AC5 would be
+  // left uncovered with nothing to show for it.
+  expect((await hand.seen()).touchMoves).toBeGreaterThan(0);
+
   await hand.up();
 
   // And the page is still the browser's to scroll, which is what keeps the

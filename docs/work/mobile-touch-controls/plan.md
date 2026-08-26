@@ -2,7 +2,7 @@
 
 - **Slug:** mobile-touch-controls
 - **Branch:** fix/mobile-touch-controls
-- **Status:** built
+- **Status:** adjudicated
 
 ## Intent
 

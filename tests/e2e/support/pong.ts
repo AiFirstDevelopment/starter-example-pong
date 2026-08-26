@@ -246,11 +246,19 @@ export interface Finger {
   moveTo(point: Point): Promise<void>;
   /** Lift it off. */
   up(): Promise<void>;
+  /** What the page made of the gesture since the finger last landed. */
+  seen(): Promise<PointerTally>;
 }
 
 /** What the page has made of the finger so far. */
-interface PointerTally {
+export interface PointerTally {
   moves: number;
+  /**
+   * Of those, the ones a finger sent. A test that asserts the paddle did *not*
+   * move needs to know one of these arrived, or it is asserting about a gesture
+   * the page never heard.
+   */
+  touchMoves: number;
   /** The browser took the gesture for a scroll and stopped reporting it. */
   cancelled: boolean;
 }
@@ -262,12 +270,15 @@ async function countPointerEvents(page: Page): Promise<void> {
     if (counted.__pointer !== undefined) {
       return;
     }
-    const tally: PointerTally = { moves: 0, cancelled: false };
+    const tally: PointerTally = { moves: 0, touchMoves: 0, cancelled: false };
     counted.__pointer = tally;
     // Registered after the game's own listener, so a count that has moved means
     // the game has already had this event.
-    window.addEventListener('pointermove', () => {
+    window.addEventListener('pointermove', (event) => {
       tally.moves += 1;
+      if (event.pointerType === 'touch') {
+        tally.touchMoves += 1;
+      }
     });
     window.addEventListener('pointercancel', () => {
       tally.cancelled = true;
@@ -336,6 +347,7 @@ export async function finger(page: Page): Promise<Finger> {
       await page.evaluate(() => {
         const tally = (window as unknown as { __pointer: PointerTally }).__pointer;
         tally.moves = 0;
+        tally.touchMoves = 0;
         tally.cancelled = false;
       });
       await session.send('Input.dispatchTouchEvent', {
@@ -365,19 +377,17 @@ export async function finger(page: Page): Promise<Finger> {
         touchPoints: [],
       });
     },
+    async seen(): Promise<PointerTally> {
+      return pointerTally(page);
+    },
   };
 }
 
-/** Land a finger on the first point, drag it through the rest, and lift it. */
-export async function touchDrag(page: Page, ...points: Point[]): Promise<void> {
-  if (points.length === 0) {
-    throw new Error('a drag needs somewhere to start');
-  }
+/** Land a finger on `from`, drag it to `to`, and lift it. */
+export async function touchDrag(page: Page, from: Point, to: Point): Promise<void> {
   const hand = await finger(page);
-  await hand.down(points[0]);
-  for (const point of points.slice(1)) {
-    await hand.moveTo(point);
-  }
+  await hand.down(from);
+  await hand.moveTo(to);
   await hand.up();
 }
 

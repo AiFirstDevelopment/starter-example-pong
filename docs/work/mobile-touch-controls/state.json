@@ -1,8 +1,8 @@
 {
   "slug": "mobile-touch-controls",
   "branch": "fix/mobile-touch-controls",
-  "stage": "built",
-  "updated": "2026-08-26T19:50:01Z",
+  "stage": "reviewed",
+  "updated": "2026-08-26T20:09:19Z",
   "plan": {
     "acs": 8,
     "steps": 8,
@@ -19,6 +19,7 @@
     "2026-08-26T19:17:12Z 1-plan planned 8 ACs, 8 steps, 0 open questions; branched from main at ddd7c34 after merging PRs #1 and #2",
     "2026-08-26T19:34:47Z plan approved by user via 1-plan",
     "2026-08-26T19:35:06Z pipeline launched, diffRange ddd7c34...HEAD (forked from main)",
-    "2026-08-26T19:50:01Z 2-build built 8/8, 2 deviations, suite green (41 unit, 36 e2e across chromium + mobile-chrome)"
+    "2026-08-26T19:50:01Z 2-build built 8/8, 2 deviations, suite green (41 unit, 36 e2e across chromium + mobile-chrome)",
+    "2026-08-26T20:09:19Z panel complete, adjudication started"
   ]
 }
