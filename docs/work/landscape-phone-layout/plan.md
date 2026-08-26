@@ -2,7 +2,7 @@
 
 - **Slug:** landscape-phone-layout
 - **Branch:** fix/landscape-phone-layout
-- **Status:** built
+- **Status:** adjudicated
 
 ## Intent
 
@@ -264,6 +264,11 @@ Both claims hold in substance; their arithmetic does not.
   the claim is making, that the chrome alone nearly fills the screen, is if
   anything stronger.
 
+- **C5 cites the wrong line.** The superseded assertion is at
+  `tests/e2e/touch.spec.ts:162` at the base commit, not 152; line 152 is the
+  opening of the test that contains it. What C5 says the assertion checks, and
+  that only the `touch-action` half changes, is right.
+
 - **C3's court is 319.3 x 191.6, not 280 x 168.** The zero-overflow half is
   exact, and the aspect is 1.667 as claimed. The compaction landed a little
   lighter than whatever the plan was measured against — the numbers it lists are
@@ -298,3 +303,40 @@ rather than merely failing:
 - No change to `playwright.config.ts`. `test.use({ viewport })` reshapes the
   screen inside `mobile-chrome` and keeps `hasTouch`, as the test strategy says.
 - Nothing was done about the court being small in landscape. *Non-goals*.
+
+## Adjudication
+
+Six lenses reported nine findings; seven were accepted and fixed, two rejected.
+The verdict at `docs/work/landscape-phone-layout/verdict.md` adjudicates each
+one and records the one escalation. What changed in the code after the build:
+
+- **The hint is clipped, not `display: none`.** As built it left the
+  accessibility tree on the one device this work item targets, so a screen-reader
+  user on a phone held sideways heard "Press any key to start" and nothing about
+  the tap or the drag that are all a phone can do. It is now clipped to a pixel:
+  out of the layout exactly as before, still announced. This is what makes *Left
+  out deliberately*'s claim that it "is still read to a screen reader" true —
+  it was not true as built, and it is recorded here rather than quietly fixed.
+
+- **AC3's ratio is checked at six viewports, not one.** 802x293 is the single
+  short screen where the sizing cannot go wrong: the PLAN DEFECT above records
+  that the *Approach*'s own `flex: 1 1 auto` gives 0.79 at 300x460, and the
+  suite passed green with that spelling restored. It no longer does.
+
+- **AC2 asks whether the elements are drawn**, not only where their boxes are: a
+  hidden element's rect is all zeroes, and the previous check read that as "on
+  screen". Hiding the mute button to win vertical space now fails the test.
+
+- **A second overflow measure, against the screen rather than the layout
+  viewport.** `documentElement.scrollHeight` is floored at the layout viewport,
+  which under Chrome's phone emulation is 618 px tall at an iPhone SE whose
+  screen is 568 — so up to 50 px of drawn, unreachable, unscrollable content was
+  invisible to AC1's own measure. AC1's measure is kept, because it is the one
+  the criterion is written in; the content is now measured too.
+
+- **One reader of the court's box.** `courtSize` duplicated `courtBox`;
+  `courtBox` now returns `width` and the duplicate is gone.
+
+Everything else is as the builder left it. The court's geometry is unchanged at
+every viewport measured — 319.34 x 191.61 at 802x293, still 361 x 217 and
+288 x 174 upright.

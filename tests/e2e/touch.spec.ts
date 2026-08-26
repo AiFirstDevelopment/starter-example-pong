@@ -375,24 +375,42 @@ test('AC8: the same seed driven the same way, touch included, plays out identica
 /** The shape the court is drawn at, whatever size the page gives it. */
 const COURT_ASPECT = 800 / COURT_HEIGHT;
 
-/** The court's rendered box — both axes, unlike the vertical-only `courtBox`. */
-async function courtSize(page: Page): Promise<{ width: number; height: number }> {
-  return page.evaluate(() => {
-    const rect = (
-      document.getElementById('court') as HTMLCanvasElement
-    ).getBoundingClientRect();
-    return { width: rect.width, height: rect.height };
-  });
-}
-
-/** How far the page runs past the bottom of the screen. */
+/** How far the page runs past the bottom of the screen, AC1's own measure. */
 async function overflow(page: Page): Promise<number> {
   return page.evaluate(
     () => document.documentElement.scrollHeight - window.innerHeight,
   );
 }
 
-/** How far below the top of an element's box the bottom of the screen is. */
+/**
+ * How far the page's content runs past the bottom of the screen.
+ *
+ * The screen is not always as tall as the page's idea of it: under Chrome's
+ * phone emulation the layout viewport can be the taller of the two — at an
+ * iPhone SE, `innerHeight` reads 618 while the document's `clientHeight` and
+ * the visual viewport both read 568 — and everything laid out in that 50 px
+ * band is drawn, unreachable and unscrollable, which is the exact condition
+ * this work item exists to close. So the smaller of the two is the screen.
+ *
+ * `overflow` above is the measure AC1 is written in, and it cannot see this:
+ * `documentElement.scrollHeight` is floored at the layout viewport, so at an
+ * iPhone SE it reads 618 whatever the page holds. This measures the content.
+ */
+async function belowTheScreen(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const content = Math.max(
+      document.body.scrollHeight,
+      document.body.getBoundingClientRect().bottom + window.scrollY,
+    );
+    const screen = Math.min(
+      window.innerHeight,
+      document.documentElement.clientHeight,
+    );
+    return Math.max(content - screen, 0);
+  });
+}
+
+/** How far outside the screen an element's box is, on either edge. */
 async function belowTheFold(page: Page, selector: string): Promise<number> {
   return page.evaluate((selector: string) => {
     const element = document.querySelector(selector);
@@ -400,7 +418,11 @@ async function belowTheFold(page: Page, selector: string): Promise<number> {
       throw new Error(`nothing on the page matches ${selector}`);
     }
     const rect = element.getBoundingClientRect();
-    return Math.max(rect.bottom - window.innerHeight, -rect.top, 0);
+    const screen = Math.min(
+      window.innerHeight,
+      document.documentElement.clientHeight,
+    );
+    return Math.max(rect.bottom - screen, -rect.top, 0);
   }, selector);
 }
 
@@ -420,6 +442,10 @@ test.describe('a phone held sideways', () => {
 
     // 448 px of it hung below the screen before this work item.
     expect(await overflow(page)).toBeLessThanOrEqual(0);
+
+    // And the content itself is on the glass, not merely inside a layout
+    // viewport that may be taller than the screen.
+    expect(await belowTheScreen(page)).toBe(0);
   });
 
   test('landscape AC2: the score, the status and the mute button are all on screen', async ({
@@ -430,15 +456,40 @@ test.describe('a phone held sideways', () => {
     // The mute button was the worst of it — stranded at page y 633 in a 293 px
     // viewport, with no way to scroll down to it.
     for (const selector of ['.scoreboard', '#player-score', '#cpu-score', '#status', '#mute']) {
+      // Drawn, and then drawn on screen. A hidden element's rect is all zeroes,
+      // which reads as "not below the fold" — so without this, winning back
+      // vertical space by hiding the mute button would leave AC2 green and the
+      // player in landscape with no way to silence the game.
+      await expect(page.locator(selector)).toBeVisible();
       expect(await belowTheFold(page, selector)).toBe(0);
     }
+  });
+
+  test('landscape: how to play is still announced when there is no room to print it', async ({
+    page,
+  }) => {
+    await page.goto('/?seed=1');
+
+    // Clipped out of the layout: a pixel, not the four lines of prose there is
+    // no room for above a court this small.
+    const hint = await page.locator('.hint').boundingBox();
+    expect(hint?.height ?? 0).toBeLessThan(4);
+
+    // And still in the accessibility tree. `display: none` would take it out of
+    // both at once, and it is the only place the game says a tap starts it and
+    // a drag moves the paddle — so a screen-reader user on a phone held
+    // sideways would be left with "Press any key to start" and no keys to
+    // press. The status line is not a substitute: it says exactly that.
+    const announced = await page.locator('body').ariaSnapshot();
+    expect(announced).toContain('Tap or click the court');
+    expect(announced).toContain('Drag the court');
   });
 
   test('landscape AC3: the court is drawn in proportion, not stretched to fit', async ({
     page,
   }) => {
     await page.goto('/?seed=1');
-    const court = await courtSize(page);
+    const court = await courtBox(page);
 
     // Capping the height and leaving the width alone gives about 2.7 here — a
     // court stretched flat, because a canvas paints its bitmap across whatever
@@ -450,6 +501,27 @@ test.describe('a phone held sideways', () => {
     // in a 293 px screen, in proportion and mostly off the bottom — which would
     // satisfy the ratio above for entirely the wrong reason.
     expect(court.height).toBeLessThan(COURT_HEIGHT / 2);
+
+    // AC3 says "at every viewport tested", and this one screen is the single
+    // place the sizing cannot go wrong. Letting the canvas grow into the column
+    // instead of only shrinking gives an identical court here and a court
+    // standing on end elsewhere — 0.79 at 300x460, 0.80 at 320x480 — so a ratio
+    // checked only at 802x293 says nothing about the rule that produced it.
+    for (const viewport of [
+      { width: 300, height: 460 },
+      { width: 320, height: 480 },
+      { width: 851, height: 393 },
+      { width: 667, height: 375 },
+      { width: 1200, height: 200 },
+    ]) {
+      await page.setViewportSize(viewport);
+      const elsewhere = await courtBox(page);
+
+      expect(
+        Math.abs(elsewhere.width / elsewhere.height - COURT_ASPECT),
+        `${viewport.width}x${viewport.height}`,
+      ).toBeLessThanOrEqual(0.02);
+    }
   });
 
   test('landscape AC4: there is no scroll range to be trapped in', async ({ page }) => {
@@ -506,16 +578,21 @@ async function expectPortraitIsUntouched(
 ): Promise<void> {
   await page.goto('/?seed=1');
 
-  // The hint is the visible half of the compaction: still here means the
-  // landscape rules did not apply, so the sizes below are the ones they leave
-  // alone rather than ones they happen to agree with.
+  // The hint is the visible half of the compaction: still laid out across the
+  // column means the landscape rules did not apply, so the sizes below are the
+  // ones they leave alone rather than ones they happen to agree with. Its full
+  // width and not merely its presence, because in landscape it is clipped to a
+  // pixel rather than removed — still in the page, and still not shown.
   await expect(page.locator('.hint')).toBeVisible();
+  const hint = await page.locator('.hint').boundingBox();
+  expect(hint?.width ?? 0).toBeGreaterThan(100);
 
-  const rendered = await courtSize(page);
+  const rendered = await courtBox(page);
   expect(Math.round(rendered.width)).toBe(court.width);
   expect(Math.round(rendered.height)).toBe(court.height);
 
   expect(await overflow(page)).toBeLessThanOrEqual(0);
+  expect(await belowTheScreen(page)).toBe(0);
 }
 
 test('landscape AC5: a Pixel 5 upright draws the court exactly as it did', async ({

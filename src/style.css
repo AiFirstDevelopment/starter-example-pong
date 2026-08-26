@@ -74,6 +74,13 @@ canvas {
    * a player who wants a closer look at a small court can have one. This
    * deliberately supersedes AC3 of the `mobile-touch-controls` work item, which
    * asserted the computed value is flatly `none`.
+   *
+   * A closer look, not a closer game: while the page is zoomed, Chromium hands
+   * a one-finger drag to the visual viewport and the paddle stops following it,
+   * whatever this property says. That is not something this value introduced —
+   * the page was already pinch-zoomable anywhere off the court, and `none` here
+   * behaves identically once zoomed — but it is the limit of what giving the
+   * gesture back buys, and pinching out is what returns control.
    */
   touch-action: pinch-zoom;
   background: var(--court);
@@ -186,8 +193,24 @@ kbd {
     aspect-ratio: 800 / 480;
   }
 
-  /* A player holding a phone is not reading the keyboard shortcuts. */
+  /*
+   * Off the screen, but not out of the page.
+   *
+   * There is no room for four lines of prose above a court this small. But the
+   * hint is not only the keyboard shortcuts: it is the one place that says a
+   * tap starts the game and a drag moves the paddle, which is the whole of what
+   * a phone can do. `display: none` takes an element out of the accessibility
+   * tree as well as out of the layout, which would leave a screen-reader user
+   * on a phone held sideways with nothing but "Press any key to start" and no
+   * keys to press. Clipped to nothing instead: no width, no height, no place in
+   * the column — and still announced.
+   */
   .hint {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }

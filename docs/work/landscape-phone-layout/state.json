@@ -1,8 +1,8 @@
 {
   "slug": "landscape-phone-layout",
   "branch": "fix/landscape-phone-layout",
-  "stage": "built",
-  "updated": "2026-08-26T22:24:12Z",
+  "stage": "reviewed",
+  "updated": "2026-08-26T22:46:59Z",
   "plan": {
     "acs": 8,
     "steps": 7,
@@ -19,6 +19,7 @@
     "2026-08-26T21:53:10Z 1-plan planned 8 ACs, 7 steps, 0 open questions; branched from main at 42e7afc. Supersedes mobile-touch-controls AC3 (touch-action none -> pinch-zoom) by user decision.",
     "2026-08-26T22:12:02Z plan approved by user via 1-plan",
     "2026-08-26T22:12:02Z pipeline launched, diffRange 42e7afc...HEAD (forked from main)",
-    "2026-08-26T22:24:12Z 2-build built 7/7, 5 deviations (1 PLAN DEFECT: flex 1 1 auto distorts the court on a narrow short screen; built as flex 0 1 auto), suite green (41 unit, 43 e2e across chromium + mobile-chrome) on macOS and in the CI Linux image"
+    "2026-08-26T22:24:12Z 2-build built 7/7, 5 deviations (1 PLAN DEFECT: flex 1 1 auto distorts the court on a narrow short screen; built as flex 0 1 auto), suite green (41 unit, 43 e2e across chromium + mobile-chrome) on macOS and in the CI Linux image",
+    "2026-08-26T22:46:59Z panel complete, adjudication started"
   ]
 }
