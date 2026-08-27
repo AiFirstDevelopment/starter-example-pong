@@ -10,6 +10,25 @@ compatibility_date = "2026-08-01"
 # A minute, as the plan settled. Overridden to something a test can wait for by
 # `wrangler dev --var`, never in production.
 IDLE_TIMEOUT_MS = "60000"
+# The pages a browser may open a table from: the site itself, any preview Pages
+# gives a deployment of it, and the two development servers this repository
+# starts. A `*` stands for exactly one label, so `<hash>.pong-3su.pages.dev` is
+# admitted and nothing further up `pages.dev` is. Adding a domain is an edit
+# here rather than a change to the Worker — and an empty list refuses everyone.
+ALLOWED_ORIGINS = "https://pong-3su.pages.dev,https://*.pong-3su.pages.dev,http://localhost:4173,http://127.0.0.1:4173,http://localhost:5173,http://127.0.0.1:5173"
+
+# What stops a stranger creating an unbounded number of Durable Objects on this
+# account's bill. Counted at the edge, per address, before the Worker addresses
+# a table — thirty a minute is far past honest use, since a real player upgrades
+# once and stays, and far below what makes a fleet of tables worth attempting.
+#
+# The field is `name`, not `binding` — the opposite of every other binding type
+# here, and `binding` is rejected outright. `namespace_id` is this Worker's own
+# label for the counter and means nothing outside it.
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
 
 [[durable_objects.bindings]]
 name = "TABLE"

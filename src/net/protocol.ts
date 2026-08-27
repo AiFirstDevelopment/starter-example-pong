@@ -50,7 +50,16 @@ export type ServerMessage =
   /** The court, as the server has it, and what happened on the way here. */
   | { kind: 'snapshot'; state: GameState; events: GameEvent[] };
 
-export type ClientMessage = { kind: 'input'; input: Input };
+export type ClientMessage =
+  /** Where this player is asking their paddle to go. */
+  | { kind: 'input'; input: Input }
+  /**
+   * Play another game at this table.
+   *
+   * A request, not an instruction: the table holds the game, and it starts one
+   * only if this socket has a seat and the last game is over.
+   */
+  | { kind: 'rematch' };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -103,11 +112,21 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
   } catch {
     return null;
   }
-  if (!isRecord(parsed) || parsed.kind !== 'input') {
+  if (!isRecord(parsed)) {
     return null;
   }
-  const input = parseInput(parsed.input);
-  return input === null ? null : { kind: 'input', input };
+  switch (parsed.kind) {
+    case 'input': {
+      const input = parseInput(parsed.input);
+      return input === null ? null : { kind: 'input', input };
+    }
+    case 'rematch':
+      // Nothing carried with it, so there is nothing to check: asking is the
+      // whole message, and whether it is granted is the table's business.
+      return { kind: 'rematch' };
+    default:
+      return null;
+  }
 }
 
 /**

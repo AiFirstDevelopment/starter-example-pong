@@ -473,7 +473,11 @@ async function sample(page: Page): Promise<Omit<Sample, 'frame'>> {
   return page.evaluate(() => {
     const canvas = document.getElementById('court') as HTMLCanvasElement;
     const context = canvas.getContext('2d');
-    const played = (window as unknown as { __sounds: unknown[] }).__sounds.length;
+    // `?? 0` because the court can be read on a page that never installed the
+    // recorder: the two-browser tests read the ball off the canvas and assert
+    // nothing about sound. A test that does assert on sound installs it, and
+    // would see a count of zero rather than a missing one either way.
+    const played = (window as unknown as { __sounds?: unknown[] }).__sounds?.length ?? 0;
     const playerScore = document.getElementById('player-score')?.textContent ?? '';
     const cpuScore = document.getElementById('cpu-score')?.textContent ?? '';
     if (context === null) {

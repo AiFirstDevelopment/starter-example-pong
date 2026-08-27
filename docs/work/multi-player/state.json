@@ -2,7 +2,7 @@
   "slug": "multi-player",
   "branch": "feature/multi-player",
   "stage": "published",
-  "updated": "2026-08-27T03:17:47Z",
+  "updated": "2026-08-27T03:38:59Z",
   "plan": {
     "acs": 9,
     "steps": 10,
@@ -39,6 +39,10 @@
     "escalations": 4,
     "head": "a6e43b9"
   },
+  "pr": {
+    "url": "https://github.com/AiFirstDevelopment/starter-example-pong/pull/5",
+    "draft": true
+  },
   "log": [
     "2026-08-27T01:19:34Z 1-plan planned 9 ACs, 10 steps, 0 open questions; branched from main at f8ffd2b. Server-authoritative Durable Object; user chose one run over splitting the simulation refactor out.",
     "2026-08-27T01:32:10Z plan approved by user via 1-plan",
@@ -46,12 +50,12 @@
     "2026-08-27T02:14:45Z 2-build built 10/10, 9 deviations incl. 2 plan defects (AC1-vs-AC2, Node 20->22), suite green: 74 unit + 55 e2e on macOS and in the CI Linux image",
     "2026-08-27T02:49:20Z panel complete, adjudication started",
     "2026-08-27T03:06:31Z 4-quorum adjudicated ready with follow-ups: 8 accepted, 3 rejected, 4 escalations, AC1 unmet as written; suite green 74 unit + 56 e2e on Node 22, networked specs 120/120",
-    "2026-08-27T03:17:47Z 5-publish opened draft PR #5. Draft is the guard's doing, not the judge's: guard.py exited 1 with 5 violations (1 verdict-consistency, 4 unresolvable AC2 evidence citations), quoted verbatim at the top of the PR body. Gate unknown - --check-gate cannot read branch protection without admin access, so whether \"quorum guard\" is a required status check must be verified by hand; not rounded up to a pass."
+    "2026-08-27T03:17:47Z 5-publish opened draft PR #5. Draft is the guard's doing, not the judge's: guard.py exited 1 with 5 violations (1 verdict-consistency, 4 unresolvable AC2 evidence citations), quoted verbatim at the top of the PR body. Gate unknown - --check-gate cannot read branch protection without admin access, so whether \"quorum guard\" is a required status check must be verified by hand; not rounded up to a pass.",
+    "2026-08-27T03:38:59Z E4 settled by user: harden before the first deploy:table. The Worker stays unpublished until an Origin allow-list, rate limiting and the single-seat broadcast fix land as their own work item.",
+    "2026-08-27T03:38:59Z E3 settled by user: add the rematch as a follow-up work item \u2014 a protocol message, a client path and startGame on agreement. A finished table is not left terminal.",
+    "2026-08-27T03:38:59Z E1 settled by user: keep URL-as-choice; AC1 to be amended to say a URL naming a game is a choice already made. Amendment needs the users own hand (plan-lock hook) and will re-record requirementsHash.",
+    "2026-08-27T03:38:59Z E2 settled by user: accept Node 22 and declare engines.node >= 22 in package.json so contributors get a sentence rather than a crash."
   ],
-  "pr": {
-    "url": "https://github.com/AiFirstDevelopment/starter-example-pong/pull/5",
-    "draft": true
-  },
   "recheck": {
     "findings": 0,
     "blockers": 0

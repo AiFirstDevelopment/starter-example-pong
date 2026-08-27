@@ -57,6 +57,14 @@ const tableIdInput = element<HTMLInputElement>('table-id');
 const audio = createAudio();
 let state: GameState = createState(readSeed(window.location.search));
 let session: Session = readSession(window.location.search);
+/**
+ * The socket to the table, once there is one.
+ *
+ * Up here rather than inside `startTable` because the gesture that asks for
+ * another game is read by the controls, which are wired before any table is
+ * joined, and there is only ever one table to ask.
+ */
+let table: TableSocket | null = null;
 
 /**
  * The score, written only when it has changed.
@@ -129,10 +137,12 @@ function toggleMute(): void {
  * A key press, a click or a tap.
  *
  * In single player it is what starts the game, as it always has been. At a
- * table it is not the player's to decide — the server starts a game when the
- * second player arrives — but it is still the gesture a browser wants before it
- * will make a sound, so the audio is unlocked either way. With nothing chosen
- * yet it does nothing at all: the game does not start until a mode is picked.
+ * table the game is the server's to start, so the same gesture asks for one
+ * instead — which is how two people who have played to eleven get another game
+ * without either of them leaving. It is also the gesture a browser wants before
+ * it will make a sound, so the audio is unlocked either way. With nothing
+ * chosen yet it does nothing at all: the game does not start until a mode is
+ * picked.
  */
 function start(): void {
   if (session.mode === 'choosing') {
@@ -140,10 +150,14 @@ function start(): void {
   }
   // Browsers only allow audio to start from a gesture, and this is the gesture.
   audio.unlock();
-  if (session.mode !== 'single') {
+  if (state.phase !== 'idle' && state.phase !== 'game-over') {
     return;
   }
-  if (state.phase !== 'idle' && state.phase !== 'game-over') {
+  if (session.mode === 'table') {
+    // Asked for, not done: nothing here draws a court or clears a score. The
+    // answer arrives as the next snapshot, the same way every other change to a
+    // table's game does, and the table is free to ignore the question.
+    table?.rematch();
     return;
   }
   state = startGame(state);
@@ -258,7 +272,7 @@ function startTable(tableId: string): void {
   let ownY: number | null = null;
   let lastFrameMs: number | null = null;
 
-  const socket: TableSocket = joinTable(tableId, {
+  table = joinTable(tableId, {
     onWelcome: (slot) => {
       session = { ...session, slot, connection: 'waiting' };
       showLabels();
@@ -302,7 +316,7 @@ function startTable(tableId: string): void {
     lastFrameMs = now;
 
     const input = controls.input();
-    socket.report(input, now);
+    table?.report(input, now);
 
     // Between the last two snapshots, the same way the one-player loop draws
     // between the last two ticks — `interpolate` does not care that these are

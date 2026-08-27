@@ -24,6 +24,8 @@ import {
 } from '../src/net/protocol';
 import { createState, startGame, type GameState } from '../src/game/state';
 import { NO_INPUT, step, type GameEvent, type Input } from '../src/game/step';
+import { callerAddress, withinRate, type RateLimiter } from './limit';
+import { originAllowed } from './origins';
 import { assignSlot } from './slots';
 
 export interface Env {
@@ -34,6 +36,17 @@ export interface Env {
    * minute a real one waits; unset, tables get the minute.
    */
   IDLE_TIMEOUT_MS?: string;
+  /**
+   * The pages a browser may open a table from, comma separated. A `var` rather
+   * than a constant so that adding a domain is a configuration change; see
+   * `origins.ts` for what a `*` in one means.
+   */
+  ALLOWED_ORIGINS?: string;
+  /**
+   * Cloudflare's rate-limit binding, if this runtime has one. Optional because
+   * a local `wrangler dev` may not, and `limit.ts` says what that means.
+   */
+  LIMITER?: RateLimiter;
 }
 
 /** A gap this long is a stalled server, not time to simulate. Same cap as the client's. */
@@ -103,9 +116,14 @@ export class Table {
 
     socket.addEventListener('message', (event: MessageEvent) => {
       const message = parseClientMessage(event.data);
-      if (message !== null) {
-        this.inputs.set(slot, message.input);
+      if (message === null) {
+        return;
       }
+      if (message.kind === 'input') {
+        this.inputs.set(slot, message.input);
+        return;
+      }
+      this.rematch(slot, socket);
     });
     // A socket that errors is a socket that has gone: the browser is not coming
     // back for this game, and holding its paddle would lock the table.
@@ -120,9 +138,16 @@ export class Table {
       // whose player left and whose seat this is — is picked up where it was
       // left, score and all; `startGame` leaves a rally alone.
       this.game = startGame(this.game);
+      // And two players is what starts the broadcast. The player already here
+      // gets the court from the loop's first tick, a thirtieth of a second away.
+      this.startLoop();
+      return;
     }
 
-    this.startLoop();
+    // Alone at the table, so there is no loop and nothing moving to report: one
+    // court, once, so the wait is spent looking at the score and the still court
+    // rather than at a blank canvas (AC4).
+    send(socket, { kind: 'snapshot', state: this.game, events: [] });
   }
 
   /**
@@ -141,10 +166,46 @@ export class Table {
     this.inputs.delete(slot);
     this.tell(other(slot), { kind: 'opponent', present: false });
 
+    // Whoever has gone, the game has stopped: the ball only moves while both
+    // paddles are held, so a loop still running would send the same court
+    // thirty times a second to nobody who needs it (AC3).
+    this.stopLoop();
+
     if (this.seats.size === 0) {
-      this.stopLoop();
       this.startIdleTimer();
+      return;
     }
+    // The player still here gets one last court, so what they are looking at is
+    // where the game stopped rather than the frame before it did.
+    this.tell(other(slot), { kind: 'snapshot', state: this.game, events: [] });
+  }
+
+  /**
+   * Play another game, if this socket is in a position to ask for one.
+   *
+   * Two checks and no more. The socket has to be the one holding this seat —
+   * a player who has left, or a third browser that was turned away, is asking
+   * about somebody else's game — and `startGame` decides the rest: it returns
+   * the game untouched unless it is `idle` or `game-over`, so a rematch that
+   * arrives mid-rally does nothing to the two people in the rally.
+   *
+   * The new court is sent straight away rather than left to the next tick, so
+   * both browsers take the winner line down at the same moment, and so the
+   * player waiting alone at a finished table — where there is no tick — sees
+   * an answer at all. Nothing is sent when nothing started: `startGame` hands
+   * back the very state it was given, and a seated player pressing keys through
+   * a rally should not be able to ask for a broadcast to both browsers.
+   */
+  private rematch(slot: Slot, socket: WebSocket): void {
+    if (this.seats.get(slot) !== socket) {
+      return;
+    }
+    const started = startGame(this.game);
+    if (started === this.game) {
+      return;
+    }
+    this.game = started;
+    this.broadcast({ kind: 'snapshot', state: this.game, events: [] });
   }
 
   private startLoop(): void {
@@ -178,10 +239,11 @@ export class Table {
    * Simulate what has passed since the last tick, then say what the court looks
    * like.
    *
-   * The ball only moves while both paddles have somebody behind them: a rally
-   * against an unattended paddle would run the score up on a player who is not
-   * there. The court is still broadcast while waiting, so the one player who is
-   * there sees the score and the still court rather than a blank canvas.
+   * Every tick is a tick of a real game: the loop runs only while both paddles
+   * have somebody behind them, because a rally against an unattended paddle
+   * would run the score up on a player who is not there — and a table with one
+   * player at it has nothing to say thirty times a second. The one court that
+   * player does need is sent by `seat` and by `vacate`.
    */
   private simulateAndBroadcast(): void {
     const now = Date.now();
@@ -189,21 +251,17 @@ export class Table {
     this.lastTickMs = now;
 
     const events: GameEvent[] = [];
-    if (this.seats.size === 2) {
-      this.accumulator = Math.min(this.accumulator + elapsed, MAX_FRAME_MS);
-      while (this.accumulator >= FIXED_DT_MS) {
-        this.accumulator -= FIXED_DT_MS;
-        const result = step(
-          this.game,
-          FIXED_DT_MS,
-          this.inputs.get('left') ?? NO_INPUT,
-          this.inputs.get('right') ?? NO_INPUT,
-        );
-        this.game = result.state;
-        events.push(...result.events);
-      }
-    } else {
-      this.accumulator = 0;
+    this.accumulator = Math.min(this.accumulator + elapsed, MAX_FRAME_MS);
+    while (this.accumulator >= FIXED_DT_MS) {
+      this.accumulator -= FIXED_DT_MS;
+      const result = step(
+        this.game,
+        FIXED_DT_MS,
+        this.inputs.get('left') ?? NO_INPUT,
+        this.inputs.get('right') ?? NO_INPUT,
+      );
+      this.game = result.state;
+      events.push(...result.events);
     }
 
     this.broadcast({ kind: 'snapshot', state: this.game, events });
@@ -287,7 +345,7 @@ function readTableId(pathname: string): string | null {
 }
 
 export default {
-  fetch(request: Request, env: Env): Response | Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
     // Something for a health check to ask, so a test harness can wait for the
@@ -303,6 +361,18 @@ export default {
     const tableId = readTableId(url.pathname);
     if (tableId === null) {
       return new Response('a table needs an id', { status: 400 });
+    }
+
+    // Both refusals happen here, and *here* is the whole point of them:
+    // `env.TABLE.get(...)` creates the Durable Object, and an object that has
+    // been created is resident and duration-billed for as long as somebody
+    // holds a socket to it. A refusal only costs nothing while the table has
+    // not been addressed yet.
+    if (!originAllowed(request.headers.get('Origin'), env.ALLOWED_ORIGINS)) {
+      return new Response('a table is opened from the game, not from here', { status: 403 });
+    }
+    if (!(await withinRate(env.LIMITER, callerAddress(request)))) {
+      return new Response('too many tables from here just now', { status: 429 });
     }
 
     return env.TABLE.get(env.TABLE.idFromName(tableId)).fetch(request);

@@ -49,6 +49,12 @@ There is no lobby, no matchmaking and no check that an id is unused. That is
 deliberate: an id is a rendezvous string, and two pairs who pick the same one
 collide. Pick something long enough that they will not.
 
+When the game is won, either player can start another with the gesture that
+starts a single-player game — a key, a click or a tap. Both browsers go back to
+0-0 and the ball is served again; neither has to leave the table and come back.
+Only a finished game restarts: the same gesture in the middle of a rally does
+nothing, and the table decides that, not the browser asking.
+
 When a player leaves, the other is told and the ball stops where it is; the
 freed paddle goes to whoever types the id next, and the game carries on from the
 score it was at. There is no reconnecting — a player who leaves has left, and
@@ -104,8 +110,14 @@ npm run deploy:site    # the page, onto Pages
 
 | Piece | Where |
 |---|---|
-| the page | `https://pong.pages.dev` (Cloudflare Pages project `pong`) |
+| the page | `https://pong-3su.pages.dev` (Cloudflare Pages project `pong`) |
 | the tables | `https://pong-table.joelstevick.workers.dev` (Worker `pong-table`) |
+
+The project is `pong` but the site is served at `pong-3su.pages.dev`: the bare
+`pong.pages.dev` subdomain was already taken by somebody else, so Pages gave
+this project a suffixed one. The suffixed host is the real one, and it is the
+host `ALLOWED_ORIGINS` below has to name — an allow-list written against
+`pong.pages.dev` would refuse every player on the deployed site.
 
 The bundle is told the table server's address at build time through
 `VITE_TABLE_URL`, which `.env.production` sets to the Worker above. Point it
@@ -114,6 +126,24 @@ somewhere else — `ws://127.0.0.1:8787` — to build a page against a local
 
 The table server is deployed first: a page that goes out before the tables it
 talks about would offer a game that cannot be joined.
+
+### Who may open a table
+
+A table id is the only credential, so the Worker is deployed with two checks in
+front of it, both in `worker/wrangler.toml` and both applied before a table is
+addressed — a Durable Object that has been addressed is resident and billed
+whether or not the request that made it was welcome.
+
+| Check | Setting | What it is worth |
+|---|---|---|
+| the pages a browser may open a table from | `ALLOWED_ORIGINS` | hygiene: it stops another site embedding these tables, and nothing else — `Origin` is a header only browsers are bound by |
+| how often one address may ask | `[[ratelimits]]` | the protection: thirty a minute, counted at the edge by `CF-Connecting-IP` |
+
+`ALLOWED_ORIGINS` is a comma-separated list of origins, where a leading `*.`
+stands for exactly one label — which is what admits the per-deployment hostname
+Pages gives every push without admitting the rest of `pages.dev`. **Deploying
+the page anywhere else means adding that origin here**, or the Worker will
+refuse every player on it.
 
 ## Tests
 
@@ -167,6 +197,8 @@ src/
 worker/
   table.ts       the Durable Object: one per table id, holding one game
   slots.ts       which paddle an arrival gets, or none
+  origins.ts     which pages a browser may open a table from
+  limit.ts       how often one address may ask for one
   wrangler.toml  the table server's configuration
 ```
 
