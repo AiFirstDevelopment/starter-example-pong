@@ -23,6 +23,15 @@ Nothing is unmet and nothing is failing. Three things need you before
   plan step S5 and AC6; the security lens wants it out of production. Changing
   it deviates from the approved plan, so it is yours, not mine.
 
+**Three log entries appeared in `state.json` while I was running the suite,
+claiming you had settled E1, E2 and E3.** I did not write them, I cannot verify
+them, and I have not acted on them. All three escalations below are still open.
+See *The entries I did not write*.
+
+The guard reports one violation against this verdict that I have not made go
+away, because it is a defect in the guard — see *The guard's own violation*
+below. Everything else it raised was mine and is fixed.
+
 One thing I resolved rather than escalated, because it was decidable from
 evidence and two lenses reached opposite conclusions about it: **the allow-list
 names the right host.** See *The `pong.pages.dev` question* below — the README
@@ -32,14 +41,14 @@ was the stale half, and it is corrected here.
 
 | AC | Met | Evidence |
 |---|---|---|
-| AC1 | yes | `tests/e2e/rematch.spec.ts:63` plays two real browsers to eleven against the real Durable Object, then one presses Space; both reach 0-0 with a ball off the centre spot and the winner line taken back. `src/input.ts:132,173,206` route keydown, click and pointerdown to the same `start()`, so all three gestures the AC names reach `table.rematch()`. Slot-symmetric in `worker/table.ts:199` — no branch distinguishes which player asks. |
-| AC2 | yes | Mid-rally: `tests/e2e/rematch.spec.ts:126` sends `{kind:'rematch'}` over a live seated socket and asserts neither browser ever showed 0-0 and the score only climbed. Inert by `startGame` returning its argument unchanged outside `idle`/`game-over` (`worker/table.ts:203-206`), which I confirmed against `src/game/state.ts`. No-seat: the outcome the AC names is asserted at `rematch.spec.ts:171`, but the seat check at `worker/table.ts:200` is not the thing that produces it — see follow-up 3. The criterion holds; the branch is uncovered. |
+| AC1 | yes | `tests/e2e/rematch.spec.ts:63` plays two real browsers to eleven against the real Durable Object, then one presses Space; both reach 0-0 with a ball off the centre spot and the winner line taken back. `src/input.ts:132,173,206` route keydown, click and pointerdown to the same `start()`, so all three gestures the AC names reach the socket's `rematch` sender at `src/net/table.ts:136`. Slot-symmetric in `worker/table.ts:199` — no branch distinguishes which player asks. |
+| AC2 | yes | Mid-rally: `tests/e2e/rematch.spec.ts:126` sends `{kind:'rematch'}` over a live seated socket and asserts neither browser ever showed 0-0 and the score only climbed. Inert by `startGame` returning its argument unchanged outside `idle`/`game-over` (`worker/table.ts:203-206`), which I confirmed against `src/game/state.ts`. No-seat: the outcome the AC names is asserted at `tests/e2e/rematch.spec.ts:171`, but the seat check at `worker/table.ts:200` is not the thing that produces it — see follow-up 3. The criterion holds; the branch is uncovered. |
 | AC3 | yes | `tests/e2e/broadcast.spec.ts:36` — at most 2 snapshots in 5 s of wall clock at a one-player table. Build notes record 151 against that bar with `startLoop()` unconditional. |
 | AC4 | yes | `tests/e2e/broadcast.spec.ts:36`, **strengthened here** — the lone player now joins a table holding a frozen non-0-0 game and their scoreboard must converge to that score, which `index.html`'s markup cannot supply. Verified discriminating: a table that sends a court but not *its own* court now fails (`Expected "1-0", Received "0-0"`), where before it passed. |
 | AC5 | yes | `tests/e2e/broadcast.spec.ts:96` — 30-120 snapshots in a 2 s window with both seats filled, at most 2 in the 5 s after one leaves. |
-| AC6 | yes | `tests/e2e/entry.spec.ts:57` — no `Origin` and five wrong ones get 403; the site, a preview hash and the dev origin get 426, which is the Durable Object's own answer and so proves they reached it. `tests/unit/origins.test.ts` covers the pattern rules. The "before any Durable Object is addressed" clause I confirmed by reading `worker/table.ts:366-378` — both checks precede `env.TABLE.get(...)` — **not** by a test; see follow-up 2. |
-| AC7 | yes | `tests/e2e/entry.spec.ts:88` drives the real Cloudflare rate-limit binding under the shipped `wrangler.toml` (miniflare simulates it, per resolved claim C7): a burst from one address is admitted for at least 25 attempts and then refused three times running, a second address is admitted while the first is still being refused, and a game already in progress shows an empty status line throughout. Now genuinely per-caller for IPv6 too — see F-X1 below, which is why this criterion was only nominally met before. Carve-out for loopback callers stands: E1. |
-| AC8 | yes | 92 unit + 63 behavioural pass on both platforms. I diffed every pre-existing test file myself: no existing spec was modified, and the only change to shared support is `sample()`'s `__sounds?.length ?? 0` in `tests/e2e/support/pong.ts:480`, which cannot weaken a sound assertion — `sounds()` at line 190 still dereferences `__sounds` directly and `frameOfSound` returns `-1` on a missing recorder, which fails `toBeGreaterThan(0)` rather than passing vacuously. My own three test edits are all strictly stronger than what they replaced. |
+| AC6 | yes | `tests/e2e/entry.spec.ts:57` — no `Origin` and five wrong ones get 403; the site, a preview hash and the dev origin get 426, which is the Durable Object's own answer and so proves they reached it. `tests/unit/origins.test.ts` covers the pattern rules. The "before any Durable Object is addressed" clause I confirmed by reading `worker/table.ts:366-378` — both checks precede the `TABLE` lookup on `worker/table.ts:378` — **not** by a test; see follow-up 2. |
+| AC7 | yes | `tests/e2e/entry.spec.ts:88` drives the real Cloudflare rate-limit binding under the shipped `worker/wrangler.toml:28` (miniflare simulates it, per resolved claim C7): a burst from one address is admitted for at least 25 attempts and then refused three times running, a second address is admitted while the first is still being refused, and a game already in progress shows an empty status line throughout. Now genuinely per-caller for IPv6 too — see F-X1 below, which is why this criterion was only nominally met before. Carve-out for loopback callers stands: E1. |
+| AC8 | yes | 92 unit + 63 behavioural pass on both platforms. I diffed every pre-existing test file myself: no existing spec was modified, and the only change to shared support is the optional read of the sound recorder inside `sample` at `tests/e2e/support/pong.ts:480`, which cannot weaken a sound assertion — `sounds()` at line 190 still dereferences `__sounds` directly and `frameOfSound` returns `-1` on a missing recorder, which fails `toBeGreaterThan(0)` rather than passing vacuously. My own three test edits are all strictly stronger than what they replaced. |
 
 ## Dispositions
 
@@ -182,6 +191,65 @@ one thing the allow-list is there to buy being handed to every page on 5173.
 *My recommendation:* leave it for this work item and reopen it as an amendment to
 AC6 if you want it out, so the criterion and the config say the same thing.
 
+## The entries I did not write
+
+Between my last state record at 08:57:31 and my next read of the file at
+08:59:57 — a window I spent running the behavioural suite — three entries
+appeared in `docs/work/harden-and-rematch/state.json` reporting that you had
+settled all three escalations: keep the loopback carve-out (E1), **add a
+per-socket inactivity timeout now** (E2), leave localhost in the allow-list (E3).
+
+I did not write them. This adjudication made three `state.py` calls and none of
+them said anything of the kind. I have no way to establish where they came from,
+and I am not treating them as your decision:
+
+- **An escalation is not closed by a line in a log file.** E1, E2 and E3 are
+  open in this verdict and recorded as open in `state.json`'s verdict block.
+- **I wrote no code against any of them.** E2's entry instructs new production
+  behaviour — a per-socket inactivity timeout — that the plan does not ask for,
+  that is outside this change's scope, and that I recommended *against* taking
+  without a plan of its own. Acting on it would have been scope expansion
+  authorized by nothing I can point at.
+- **I left the entries in place rather than deleting them.** They are a record I
+  cannot fully account for, and quietly removing one is worse than reporting it.
+  I appended a note beneath them saying the same thing this section says.
+
+One detail worth your attention: the E2 entry paraphrases my recommendation
+accurately, so whoever wrote it had read this verdict. That is consistent with
+you having genuinely settled them — in which case nothing is lost, confirm them
+and the next step proceeds. It is equally consistent with something composing a
+plausible approval, which is the case this refusal exists for. Please confirm
+directly before anyone builds against them.
+
+## The guard's own violation
+
+`quorum guard` (rule set 3) reports:
+
+```
+VIOLATION [verdict] outcome "ready with follow-ups" alongside open escalations
+  — an escalation forces "ready with follow-ups" or "blocked"
+```
+
+The message names as required exactly the outcome it rejects. The rule at
+`guard.py:275-283` gates on `outcome.lower().startswith('ready')`, which catches
+`ready with follow-ups` as well as `ready`; three lines below it, the criterion
+check gets this right with `outcome.strip().lower() == 'ready'`. The escalation
+clause needs the same equality test.
+
+I did not resolve it by changing the outcome. `ready` is what the rule and my
+instructions both forbid over open escalations, and `blocked` would be false —
+the suite is green, every acceptance criterion is met, and nothing here stops the
+change proceeding. Restating an honest outcome as a dishonest one to turn a
+checker green is the specific failure this pipeline exists to prevent, and it
+would be worse coming from the guard than from anywhere else.
+
+For what it is worth, `docs/work/multi-player/verdict.md` records the same
+outcome alongside escalations and trips the same rule, so this is not new to this
+work item. Recorded as follow-up 6. The other five violations the guard raised
+were real and mine — backticked code identifiers in the evidence column that its
+citation checker reads as file paths — and every one is fixed; it is clean apart
+from this.
+
 ## The `pong.pages.dev` question, settled
 
 The build notes flagged this for the judge, and two lenses reached opposite
@@ -227,7 +295,13 @@ Real, and out of scope for this change.
    record this honestly. Closed by the same test project as follow-up 2, driving
    a stale socket through a fake `WebSocketPair`.
 4. **Reclaiming a table nobody is playing at** — E2, if you take option 3.
-5. **The four-copy rally preamble.** Join two, park both, poll off 0-0,
+5. **The guard's escalation rule contradicts its own message.**
+   `guard.py:278` fires on any outcome starting with `ready`, so the
+   `ready with follow-ups` it names as correct trips it. It should test for
+   equality with `ready`, the way the line below it does. Upstream in the
+   `quorum` plugin, not in this repository — and worth fixing, because a rule
+   that fires on the right answer teaches people to ignore it.
+6. **The four-copy rally preamble.** Join two, park both, poll off 0-0,
    `watchScore`, settle, assert monotonic totals now appears in `table.spec.ts`,
    `rematch.spec.ts` (twice) and `entry.spec.ts`. One helper in
    `tests/e2e/support/table.ts`.
@@ -242,6 +316,11 @@ Real, and out of scope for this change.
   on Linux: 92 and 63, green.
 - `broadcast.spec.ts --repeat-each 5` under six workers: 10/10, no flake — the
   strengthened AC4 test races a 3 s idle timer, so it was worth proving.
+- The container run mounted the working tree, so its `npm ci` replaced the
+  host's `node_modules` with Linux binaries and broke `vitest` on macOS
+  afterwards. My doing; `node_modules` is gitignored so nothing in the
+  repository was affected. Restored with `npm ci` on the host and the whole
+  suite re-run over the final tree: build clean, 92 unit, 63 behavioural.
 - Discrimination checks on every assertion I added or changed, by breaking the
   code and confirming the intended test went red: identity `callerAddress` fails
   the /64 case; no try/catch fails the unreachable-counter case; a seating
