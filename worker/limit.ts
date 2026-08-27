@@ -55,12 +55,18 @@ const IPV6_HEXTETS = 8;
  * first four hextets are zero, so truncating it would put every caller who
  * arrives that way on a single shared allowance. A dot inside a colonned
  * address is what says so.
+ *
+ * Case is folded first, before anything else looks at the address. Hexadecimal
+ * has two spellings of every digit above nine and an address may arrive in
+ * either, so a key that carries case is a key one caller has several of — and
+ * an allowance a caller has several of is not an allowance. The dotted form is
+ * where that used to leak: it was handed back before the fold rather than after.
  */
 function network(address: string): string {
-  if (!address.includes(':') || address.includes('.')) {
-    return address;
-  }
   const lower = address.toLowerCase();
+  if (!lower.includes(':') || lower.includes('.')) {
+    return lower;
+  }
   const [head, tail] = lower.split('::', 2) as [string, string | undefined];
   const left = head === '' ? [] : head.split(':');
   const right = tail === undefined || tail === '' ? [] : tail.split(':');

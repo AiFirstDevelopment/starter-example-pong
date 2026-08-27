@@ -29,6 +29,17 @@ export const TABLE_URL = `ws://127.0.0.1:${TABLE_PORT}`;
  */
 export const TEST_IDLE_TIMEOUT_MS = 3000;
 
+/**
+ * The liveness timeout the suite's table server is started with.
+ *
+ * Production sockets get the ninety seconds the plan settled on. Short here for
+ * the same reason the idle timeout is, but not as short: the browser beats once
+ * a second and the beat rides a timer the page owns, so this has to leave room
+ * for a beat or two to be late under a loaded suite without a live player being
+ * thrown out of their game.
+ */
+export const TEST_LIVENESS_TIMEOUT_MS = 5000;
+
 /** How long a test will wait for two browsers and a server to agree. */
 export const CONVERGE_MS = 8000;
 
@@ -52,10 +63,11 @@ export interface JoinOptions {
 /**
  * Wrap `window.WebSocket` before the page loads.
  *
- * Four things a test needs and a page cannot otherwise be asked for: how many
+ * Five things a test needs and a page cannot otherwise be asked for: how many
  * sockets it opened, a delay on the wire in both directions, a way to put a
- * message into the client that the server never sent, and a way to send the
- * table one the client itself would not.
+ * message into the client that the server never sent, a way to send the table
+ * one the client itself would not, and a way to stop the socket saying anything
+ * at all without closing it.
  *
  * The delay is done by intercepting the message before the game's own listener
  * — registered here, in the constructor, so it is registered first — stopping it
@@ -103,6 +115,9 @@ export async function installSocketShim(page: Page, options: JoinOptions = {}): 
       }
 
       class ShimmedWebSocket extends real {
+        /** Set by `__silence`: the socket stays open and stops saying anything. */
+        private muted = false;
+
         constructor(url: string | URL, protocols?: string | string[]) {
           super(url, protocols);
           tally.attempts += 1;
@@ -146,11 +161,18 @@ export async function installSocketShim(page: Page, options: JoinOptions = {}): 
         }
 
         send(data: string): void {
+          if (this.muted) {
+            return;
+          }
           if (latencyMs > 0) {
             setTimeout(() => super.send(data), latencyMs);
             return;
           }
           super.send(data);
+        }
+
+        mute(): void {
+          this.muted = true;
         }
       }
 
@@ -170,6 +192,13 @@ export async function installSocketShim(page: Page, options: JoinOptions = {}): 
           throw new Error('the page has not opened a socket to say anything on');
         }
         socket.send(data);
+      };
+      (window as unknown as { __silence: () => void }).__silence = () => {
+        const socket = live[live.length - 1];
+        if (socket === undefined) {
+          throw new Error('the page has not opened a socket to silence');
+        }
+        (socket as ShimmedWebSocket).mute();
       };
     },
     { latencyMs: options.latencyMs ?? 0, blockSockets: options.blockSockets ?? false },
@@ -276,6 +305,20 @@ export async function say(page: Page, message: unknown): Promise<void> {
   await page.evaluate((data: string) => {
     (window as unknown as { __say: (raw: string) => void }).__say(data);
   }, JSON.stringify(message));
+}
+
+/**
+ * Stop this page's socket saying anything, and leave it open.
+ *
+ * What a killed tab or a cut network looks like from the table's side, and the
+ * one thing closing the page cannot show: a close frame is an answer, and the
+ * table acts on it at once. The case the timeout exists for is the one where no
+ * answer ever comes.
+ */
+export async function goSilent(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as unknown as { __silence: () => void }).__silence();
+  });
 }
 
 /** Put a message into the page's client that the table never sent. */

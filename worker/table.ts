@@ -15,7 +15,9 @@
 import {
   FIXED_DT_MS,
   IDLE_TIMEOUT_MS,
+  LIVENESS_TIMEOUT_MS,
   REFUSED_CLOSE_CODE,
+  SILENT_CLOSE_CODE,
   SNAPSHOT_INTERVAL_MS,
   normaliseTableId,
   parseClientMessage,
@@ -37,6 +39,12 @@ export interface Env {
    */
   IDLE_TIMEOUT_MS?: string;
   /**
+   * How long a seated socket may say nothing before its seat is taken back, in
+   * milliseconds. Configured for the same reason `IDLE_TIMEOUT_MS` is: a suite
+   * cannot wait the minute and a half a real socket gets. Unset, they get it.
+   */
+  LIVENESS_TIMEOUT_MS?: string;
+  /**
    * The pages a browser may open a table from, comma separated. A `var` rather
    * than a constant so that adding a domain is a configuration change; see
    * `origins.ts` for what a `*` in one means.
@@ -55,9 +63,10 @@ const MAX_FRAME_MS = 250;
 /** The prefix a table socket is addressed at: `/table/<id>`. */
 const TABLE_PATH = '/table/';
 
-function readIdleTimeout(env: Env): number {
-  const configured = Number(env.IDLE_TIMEOUT_MS);
-  return Number.isFinite(configured) && configured > 0 ? configured : IDLE_TIMEOUT_MS;
+/** A `var` read as milliseconds, or the constant when it says nothing usable. */
+function readTimeout(configured: string | undefined, fallback: number): number {
+  const value = Number(configured);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 export class Table {
@@ -65,15 +74,20 @@ export class Table {
   private readonly seats = new Map<Slot, WebSocket>();
   /** What each player last asked for. A player who says nothing keeps asking for it. */
   private readonly inputs = new Map<Slot, Input>();
+  /** When each seat was last heard from. Silence past the timeout frees it. */
+  private readonly heardMs = new Map<Slot, number>();
   private game: GameState;
   private loop: ReturnType<typeof setInterval> | null = null;
   private idle: ReturnType<typeof setTimeout> | null = null;
+  private silence: ReturnType<typeof setTimeout> | null = null;
   private lastTickMs = 0;
   private accumulator = 0;
   private readonly idleTimeoutMs: number;
+  private readonly livenessTimeoutMs: number;
 
   constructor(_state: DurableObjectState, env: Env) {
-    this.idleTimeoutMs = readIdleTimeout(env);
+    this.idleTimeoutMs = readTimeout(env.IDLE_TIMEOUT_MS, IDLE_TIMEOUT_MS);
+    this.livenessTimeoutMs = readTimeout(env.LIVENESS_TIMEOUT_MS, LIVENESS_TIMEOUT_MS);
     this.game = createState(Date.now() | 0);
   }
 
@@ -113,14 +127,23 @@ export class Table {
 
     this.seats.set(slot, socket);
     this.inputs.set(slot, NO_INPUT);
+    // Arriving is the first sign of life. The browser's heartbeat carries it on.
+    this.heardMs.set(slot, Date.now());
+    this.scheduleSilenceCheck();
 
     socket.addEventListener('message', (event: MessageEvent) => {
       const message = parseClientMessage(event.data);
       if (message === null) {
         return;
       }
+      // Whatever the browser said, saying it is the sign of life — and a player
+      // who has stopped moving says nothing else at all.
+      this.markAlive(slot, socket);
       if (message.kind === 'input') {
         this.inputs.set(slot, message.input);
+        return;
+      }
+      if (message.kind === 'alive') {
         return;
       }
       this.rematch(slot, socket);
@@ -164,12 +187,16 @@ export class Table {
     }
     this.seats.delete(slot);
     this.inputs.delete(slot);
+    this.heardMs.delete(slot);
     this.tell(other(slot), { kind: 'opponent', present: false });
 
     // Whoever has gone, the game has stopped: the ball only moves while both
     // paddles are held, so a loop still running would send the same court
     // thirty times a second to nobody who needs it (AC3).
     this.stopLoop();
+    // Whoever is left decides when the table next needs looking at, and a table
+    // nobody is at needs no timer at all.
+    this.scheduleSilenceCheck();
 
     if (this.seats.size === 0) {
       this.startIdleTimer();
@@ -268,6 +295,81 @@ export class Table {
   }
 
   /**
+   * Note that this socket is still there.
+   *
+   * A stamp rather than a timer per socket: the check below is one timer set for
+   * whichever seat falls silent first, so a message thirty times a second costs
+   * a map write and nothing else. The seat is confirmed first because a socket
+   * whose seat has been handed on — freed by an error, taken by the next arrival
+   * — must not be able to hold somebody else's deadline open.
+   */
+  private markAlive(slot: Slot, socket: WebSocket): void {
+    if (this.seats.get(slot) !== socket) {
+      return;
+    }
+    this.heardMs.set(slot, Date.now());
+  }
+
+  /**
+   * Arm one timer, for whichever seat falls silent first.
+   *
+   * One timer for the table rather than one per socket, and never reset while a
+   * player is talking: a stamp moved forward simply makes this fire early, find
+   * nobody silent, and arm itself again. Nothing is armed when nobody is seated,
+   * because a pending timer is one of the things that keeps a Durable Object
+   * resident — which is the bill this timeout exists to stop.
+   */
+  private scheduleSilenceCheck(): void {
+    this.cancelSilenceCheck();
+
+    let earliest: number | null = null;
+    for (const heard of this.heardMs.values()) {
+      const deadline = heard + this.livenessTimeoutMs;
+      if (earliest === null || deadline < earliest) {
+        earliest = deadline;
+      }
+    }
+    if (earliest === null) {
+      return;
+    }
+    this.silence = setTimeout(() => this.dropSilent(), Math.max(0, earliest - Date.now()));
+  }
+
+  private cancelSilenceCheck(): void {
+    if (this.silence !== null) {
+      clearTimeout(this.silence);
+      this.silence = null;
+    }
+  }
+
+  /**
+   * Take back the seat of anybody who has not been heard from in the timeout.
+   *
+   * The socket is closed *and* the seat freed here, rather than closing and
+   * waiting for the close event to do it: a connection whose other end has gone
+   * may never deliver one, which is the whole reason this timer exists. `vacate`
+   * ignores a seat that is not this socket's, so doing both costs nothing if the
+   * event does arrive.
+   *
+   * This does not stop somebody who means it. A script that holds a socket open
+   * and answers the heartbeat keeps its table, and the rate limit at the door is
+   * what caps how fast it can open more. What this frees is the abandoned table
+   * — a killed tab, a closed laptop — which is the common case.
+   */
+  private dropSilent(): void {
+    this.silence = null;
+    const now = Date.now();
+    for (const [slot, socket] of [...this.seats]) {
+      if (now - (this.heardMs.get(slot) ?? now) < this.livenessTimeoutMs) {
+        continue;
+      }
+      hangUp(socket);
+      this.vacate(slot, socket);
+    }
+    this.scheduleSilenceCheck();
+  }
+
+  /**
    * The last player has gone: start the clock on throwing the game away.
    *
    * This timer is the only thing that discards a game. It does not need a
@@ -326,6 +428,21 @@ function send(socket: WebSocket, message: ServerMessage): void {
     socket.send(JSON.stringify(message));
   } catch {
     // Nothing to do: the seat is freed by the close that follows.
+  }
+}
+
+/**
+ * Hang up on a socket that has stopped answering.
+ *
+ * Guarded the way `send` is and for the same reason: the browser at the other
+ * end has, by construction, gone, and a close that throws on the way out must
+ * not take the rest of the check — or the other player's game — down with it.
+ */
+function hangUp(socket: WebSocket): void {
+  try {
+    socket.close(SILENT_CLOSE_CODE, 'no sign of life');
+  } catch {
+    // Already gone. The seat is taken back either way.
   }
 }
 

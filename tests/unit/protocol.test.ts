@@ -48,6 +48,22 @@ describe('parseClientMessage', () => {
     }
   });
 
+  it('reads a heartbeat, and nothing that is only nearly one', () => {
+    // The kind is the whole message here too, and getting it wrong costs a seat
+    // either way: a table that read one of these as a heartbeat would hold a
+    // paddle for a browser that has gone, and one that dropped a real heartbeat
+    // would take the paddle off a player who is still there.
+    expect(parseClientMessage(JSON.stringify({ kind: 'alive' }))).toEqual({ kind: 'alive' });
+    for (const raw of [
+      '"alive"',
+      JSON.stringify({ kind: 'Alive' }),
+      JSON.stringify({ kind: 'alive ' }),
+      JSON.stringify({ alive: true }),
+    ]) {
+      expect(parseClientMessage(raw)).toBeNull();
+    }
+  });
+
   it('drops a target that is not a number the court can hold', () => {
     // A paddle put somewhere that is not a number stays there for the rest of
     // the game, and the server is holding that paddle for somebody else as

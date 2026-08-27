@@ -5,9 +5,20 @@
  * into the four things the game cares about — you are on this paddle, somebody
  * is or is not on the other one, here is the court, and you are not getting in —
  * and take the player's input back the other way at the agreed rate.
+ *
+ * It also keeps the socket audible. A player who stops moving has no input to
+ * report, and a table cannot tell that apart from a browser that has gone unless
+ * the browser says so, so this end beats once an interval when it has nothing
+ * else to say.
  */
 
-import { SNAPSHOT_INTERVAL_MS, parseServerMessage, type Slot } from './protocol';
+import {
+  HEARTBEAT_INTERVAL_MS,
+  SNAPSHOT_INTERVAL_MS,
+  parseServerMessage,
+  type ClientMessage,
+  type Slot,
+} from './protocol';
 import type { GameState } from '../game/state';
 import type { GameEvent, Input } from '../game/step';
 
@@ -29,8 +40,9 @@ export interface TableSocket {
    * Report what the player is asking for.
    *
    * Called every frame; sent at most thirty times a second, and only when the
-   * answer has changed. A player holding still says nothing, and the table goes
-   * on applying what they last asked for.
+   * answer has changed. A player holding still reports nothing, and the table
+   * goes on applying what they last asked for — what tells the table they are
+   * still there is the heartbeat, on its own timer, not this.
    */
   report: (input: Input, now: number) => void;
   /**
@@ -72,6 +84,52 @@ export function joinTable(tableId: string, events: TableEvents): TableSocket {
   let closed = false;
   let lastSent: Input | null = null;
   let lastSentMs = 0;
+  /** When anything at all last went up the socket, on the same clock as `report`. */
+  let lastSpokeMs = 0;
+
+  /**
+   * Everything this browser says goes through here.
+   *
+   * One place, so that the heartbeat knows when the socket last spoke without
+   * every sender having to remember to tell it.
+   */
+  function speak(message: ClientMessage, now: number): void {
+    lastSpokeMs = now;
+    socket.send(JSON.stringify(message));
+  }
+
+  /** Whether this input is news, and whether it is news the interval allows yet. */
+  function worthSending(input: Input, now: number): boolean {
+    if (lastSent === null) {
+      return true;
+    }
+    if (sameInput(lastSent, input)) {
+      return false;
+    }
+    // Changed, but too soon. It has not gone anywhere: the next frame past the
+    // interval finds it still different and sends it then.
+    return now - lastSentMs >= SNAPSHOT_INTERVAL_MS;
+  }
+
+  /**
+   * Say nothing in particular, so the table knows the socket is still here.
+   *
+   * On a timer of its own rather than off the animation frame, because a
+   * backgrounded tab stops being animated altogether: a player who switches
+   * away for a moment is still a player at the table, and their paddle is still
+   * theirs. `performance.now()` is the clock `report` is handed, so the two
+   * agree about how long it has been.
+   */
+  const heartbeat = setInterval(() => {
+    if (socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    const now = performance.now();
+    if (now - lastSpokeMs < HEARTBEAT_INTERVAL_MS) {
+      return;
+    }
+    speak({ kind: 'alive' }, now);
+  }, HEARTBEAT_INTERVAL_MS);
 
   socket.addEventListener('message', (event: MessageEvent) => {
     const message = parseServerMessage(event.data);
@@ -96,6 +154,9 @@ export function joinTable(tableId: string, events: TableEvents): TableSocket {
   });
 
   socket.addEventListener('close', () => {
+    // Before the guard below, because `close()` sets `closed` itself: a timer
+    // left running on a socket that has gone beats away for the life of the tab.
+    clearInterval(heartbeat);
     if (closed) {
       return;
     }
@@ -121,25 +182,21 @@ export function joinTable(tableId: string, events: TableEvents): TableSocket {
       if (socket.readyState !== WebSocket.OPEN) {
         return;
       }
-      if (lastSent !== null && sameInput(lastSent, input)) {
-        return;
-      }
-      if (lastSent !== null && now - lastSentMs < SNAPSHOT_INTERVAL_MS) {
-        // Changed, but too soon. It has not gone anywhere: the next frame past
-        // the interval finds it still different and sends it then.
+      if (!worthSending(input, now)) {
         return;
       }
       lastSent = input;
       lastSentMs = now;
-      socket.send(JSON.stringify({ kind: 'input', input }));
+      speak({ kind: 'input', input }, now);
     },
     rematch: (): void => {
       if (socket.readyState !== WebSocket.OPEN) {
         return;
       }
-      socket.send(JSON.stringify({ kind: 'rematch' }));
+      speak({ kind: 'rematch' }, performance.now());
     },
     close: (): void => {
+      clearInterval(heartbeat);
       closed = true;
       socket.close();
     },

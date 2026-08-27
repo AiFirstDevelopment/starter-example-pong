@@ -18,6 +18,30 @@ function limiter(success: boolean): RateLimiter & { keys: string[] } {
   };
 }
 
+/**
+ * A limiter that grants each key one table and no more.
+ *
+ * The deployed one counts thirty a minute; one is the same counter with the
+ * arithmetic taken out, and it is what makes "these two spellings share an
+ * allowance" a question with an observable answer rather than a comparison of
+ * two strings.
+ */
+function allowanceOfOne(): RateLimiter & { keys: string[] } {
+  const keys: string[] = [];
+  const spent = new Set<string>();
+  return {
+    keys,
+    limit: async ({ key }: { key: string }) => {
+      keys.push(key);
+      if (spent.has(key)) {
+        return { success: false };
+      }
+      spent.add(key);
+      return { success: true };
+    },
+  };
+}
+
 describe('callerAddress', () => {
   it('counts a caller by the address the edge names', () => {
     expect(callerAddress(asking({ 'CF-Connecting-IP': '203.0.113.7' }))).toBe('203.0.113.7');
@@ -73,6 +97,24 @@ describe('callerAddress', () => {
       callerAddress(asking({ 'CF-Connecting-IP': '::ffff:203.0.113.7' })),
     );
   });
+
+  it('counts one host once however it is spelled', () => {
+    // Hexadecimal has two spellings of every digit above nine, and an edge may
+    // hand over either. A key that carries the case is a key the same caller has
+    // more than one of, and a caller with more than one key has more than one
+    // allowance — which is the limit not limiting. The colonned forms were
+    // already folded; the IPv4-mapped one was handed back before the fold.
+    expect(callerAddress(asking({ 'CF-Connecting-IP': '::FFFF:192.0.2.1' }))).toBe(
+      callerAddress(asking({ 'CF-Connecting-IP': '::ffff:192.0.2.1' })),
+    );
+    expect(callerAddress(asking({ 'CF-Connecting-IP': '::FfFf:192.0.2.1' }))).toBe(
+      callerAddress(asking({ 'CF-Connecting-IP': '::ffff:192.0.2.1' })),
+    );
+    // And the two hosts behind those spellings are still two callers.
+    expect(callerAddress(asking({ 'CF-Connecting-IP': '::FFFF:192.0.2.2' }))).not.toBe(
+      callerAddress(asking({ 'CF-Connecting-IP': '::ffff:192.0.2.1' })),
+    );
+  });
 });
 
 describe('withinRate', () => {
@@ -111,5 +153,19 @@ describe('withinRate', () => {
       },
     };
     expect(await withinRate(unwell, '203.0.113.7')).toBe(true);
+  });
+
+  it('refuses the other spelling once one of them has spent the allowance', async () => {
+    // The whole point of counting a caller by one key: a stranger who exhausts
+    // their allowance cannot get another by changing the case of the address
+    // they arrive from.
+    const counter = allowanceOfOne();
+    const shouting = callerAddress(asking({ 'CF-Connecting-IP': '::FFFF:192.0.2.1' }));
+    const quiet = callerAddress(asking({ 'CF-Connecting-IP': '::ffff:192.0.2.1' }));
+
+    expect(await withinRate(counter, shouting)).toBe(true);
+    expect(await withinRate(counter, quiet)).toBe(false);
+    // One caller, counted twice against one key, rather than two callers.
+    expect(new Set(counter.keys).size).toBe(1);
   });
 });

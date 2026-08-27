@@ -1,0 +1,17 @@
+{
+  "slug": "table-server-limits",
+  "branch": "fix/table-server-limits",
+  "stage": "building",
+  "updated": "2026-08-27T09:39:01Z",
+  "plan": {
+    "acs": 7,
+    "steps": 9,
+    "open": 0,
+    "requirementsHash": "2bb9fb0f00a099aa3f4cd009a52bf2b8e6bb7c92393c04b9070f97284ca48d97"
+  },
+  "log": [
+    "2026-08-27T09:34:40Z 1-plan planned 7 ACs, 9 steps, 0 open questions; branched from main at 844d8bc. Carries harden-and-rematch E2 (as an inactivity timeout, user's choice over hibernation), judge-diff F1 (IPv6 case), and the entry-pinning the last verdict could not close.",
+    "2026-08-27T09:39:01Z plan approved by user via 1-plan",
+    "2026-08-27T09:39:01Z pipeline launched, diffRange 844d8bc...HEAD (forked from main)"
+  ]
+}

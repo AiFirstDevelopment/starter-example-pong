@@ -28,6 +28,31 @@ export const SNAPSHOT_INTERVAL_MS = 1000 / 30;
 export const IDLE_TIMEOUT_MS = 60_000;
 
 /**
+ * How often a browser says it is still there when it has nothing else to say.
+ *
+ * A player who parks their paddle stops sending input entirely — there is
+ * nothing to report — so without this a still player and a closed laptop look
+ * exactly alike to a table. Far shorter than the timeout below, because the cost
+ * of a beat is one small frame and the cost of missing enough of them is a
+ * player evicted from a game they are still playing.
+ */
+export const HEARTBEAT_INTERVAL_MS = 1000;
+
+/**
+ * How long a seated socket may say nothing at all before its seat is taken back.
+ *
+ * The socket, not the player: a player holding still is beating away underneath,
+ * and only a browser that has gone — a killed tab, a closed laptop, a cut
+ * network — falls silent. A Durable Object is resident and duration-billed for
+ * as long as somebody holds a socket to it, and a socket nobody is behind holds
+ * one for as long as the connection survives, which can be hours.
+ *
+ * Ninety seconds is ninety missed beats: long enough that no hiccup reaches it,
+ * short enough that an abandoned table is not an afternoon's billing.
+ */
+export const LIVENESS_TIMEOUT_MS = 90_000;
+
+/**
  * The close code a table uses to turn a third arrival away.
  *
  * In the 4000-4999 range, which is the application's to define. The refusal is
@@ -36,6 +61,16 @@ export const IDLE_TIMEOUT_MS = 60_000;
  * full from a connection that simply failed.
  */
 export const REFUSED_CLOSE_CODE = 4409;
+
+/**
+ * The close code a table uses on a socket that stopped answering.
+ *
+ * In the same application-defined range as `REFUSED_CLOSE_CODE`, and distinct
+ * from it so that a connection dropped for silence can be told apart from one
+ * turned away at a full table. The browser at the other end is, by construction,
+ * not listening — this is for whoever reads the logs.
+ */
+export const SILENT_CLOSE_CODE = 4408;
 
 /** A table id long enough for anything a person would agree out loud. */
 export const MAX_TABLE_ID_LENGTH = 64;
@@ -59,7 +94,16 @@ export type ClientMessage =
    * A request, not an instruction: the table holds the game, and it starts one
    * only if this socket has a seat and the last game is over.
    */
-  | { kind: 'rematch' };
+  | { kind: 'rematch' }
+  /**
+   * Still here.
+   *
+   * Sent when nothing else has been for the heartbeat interval, and carrying
+   * nothing: the fact that it arrived is the whole message. A player who stops
+   * moving stops sending input, so without this the table cannot tell a parked
+   * paddle from a browser that has gone.
+   */
+  | { kind: 'alive' };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -124,6 +168,10 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
       // Nothing carried with it, so there is nothing to check: asking is the
       // whole message, and whether it is granted is the table's business.
       return { kind: 'rematch' };
+    case 'alive':
+      // Nothing carried with it either, and nothing asked for: arriving is all
+      // it does.
+      return { kind: 'alive' };
     default:
       return null;
   }
