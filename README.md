@@ -136,7 +136,7 @@ The two-browser tests are different in kind. They start a second server — a re
 contexts against it, and they cannot freeze the clock: a server and two browsers
 have no clock to share. So they run on real time and poll for what the pages
 converge to rather than asserting on a particular frame. The table server they
-run against is started with a two-second idle timeout instead of the minute a
+run against is started with a three-second idle timeout instead of the minute a
 real one gets, so a test can watch a table expire without costing the suite a
 minute.
 

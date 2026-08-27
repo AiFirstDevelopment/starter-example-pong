@@ -95,7 +95,6 @@ export class Table {
   /** Put an arriving player on `slot` and tell both ends where they stand. */
   private seat(slot: Slot, socket: WebSocket): void {
     if (this.seats.size === 0) {
-      this.discardIfIdle();
       this.cancelIdleTimer();
     }
 
@@ -210,6 +209,14 @@ export class Table {
     this.broadcast({ kind: 'snapshot', state: this.game, events });
   }
 
+  /**
+   * The last player has gone: start the clock on throwing the game away.
+   *
+   * This timer is the only thing that discards a game. It does not need a
+   * belt-and-braces check on the way back in: an object evicted while nobody
+   * was here loses the game with it — the table keeps nothing in storage — so a
+   * re-created one is a fresh game whether the timer ran or not.
+   */
   private startIdleTimer(): void {
     this.cancelIdleTimer();
     this.idle = setTimeout(() => {
@@ -222,23 +229,6 @@ export class Table {
     if (this.idle !== null) {
       clearTimeout(this.idle);
       this.idle = null;
-    }
-  }
-
-  /**
-   * Throw the game away if the table has been empty long enough.
-   *
-   * The timer above is the usual way that happens, but a Durable Object with no
-   * sockets open may be evicted and its timers with it, so an arrival checks the
-   * clock as well rather than trusting a timer that may never have fired.
-   */
-  private discardIfIdle(): void {
-    if (this.idle === null && this.lastTickMs > 0) {
-      // The timer has already run, or was lost with the object it belonged to.
-      // Either way nothing has happened here since the last tick.
-      if (Date.now() - this.lastTickMs >= this.idleTimeoutMs) {
-        this.game = createState(Date.now() | 0);
-      }
     }
   }
 

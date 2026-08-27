@@ -2,7 +2,7 @@
 
 - **Slug:** multi-player
 - **Branch:** feature/multi-player
-- **Status:** built
+- **Status:** adjudicated
 
 ## Intent
 

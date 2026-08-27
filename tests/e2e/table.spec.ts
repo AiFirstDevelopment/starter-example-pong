@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { paddleAt } from './support/pong';
+import { courtBox, paddleAt } from './support/pong';
 import {
   CONVERGE_MS,
   TEST_IDLE_TIMEOUT_MS,
@@ -15,8 +15,10 @@ import {
   prepareTablePage,
   scoreOf,
   scoresSeen,
+  snapshotsSeen,
   socketCloses,
   statusOf,
+  statusesSeen,
 } from './support/table';
 
 /**
@@ -187,7 +189,6 @@ test('AC7: a table nobody is at times out, and starts over at 0-0', async ({ bro
   await expect
     .poll(() => scoreOf(first.page), { timeout: CONVERGE_MS })
     .not.toBe('0-0');
-  const abandoned = await scoreOf(first.page);
 
   // Opened before the table empties, so coming back is a page load rather than
   // a whole browser context — the table is only free for its idle timeout, and
@@ -195,7 +196,19 @@ test('AC7: a table nobody is at times out, and starts over at 0-0', async ({ bro
   const soon = await prepareTablePage(browser);
   const later = await prepareTablePage(browser);
 
+  // The score to come back to is read after the table has stopped, not out of a
+  // rally that is still running: points land the best part of every two seconds
+  // and a reference taken while the ball is moving can be overtaken before the
+  // last socket closes. The ball stops the moment one paddle is unattended, and
+  // a snapshot is broadcast at the end of the tick that produced it — so once
+  // the player still there has been told their opponent has gone, the score in
+  // front of them is the score the table froze at.
   await first.close();
+  await expect
+    .poll(() => statusOf(second.page), { timeout: CONVERGE_MS })
+    .toBe(`Your opponent left. Waiting for another player at table ${table}.`);
+  const abandoned = await scoreOf(second.page);
+  expect(abandoned).not.toBe('0-0');
   await second.close();
 
   // Straight back: the table is still the same game, which is what makes the
@@ -218,6 +231,13 @@ test('AC7: a table nobody is at times out, and starts over at 0-0', async ({ bro
       { timeout: CONVERGE_MS },
     )
     .toContain('Waiting for another player');
+  // And a court from the table before reading the score off it. The welcome
+  // arrives before the first snapshot does, and until one lands the scoreboard
+  // is still the 0-0 index.html ships — which would pass this whether the
+  // timeout discarded the abandoned game or not.
+  await expect
+    .poll(() => snapshotsSeen(later.page), { timeout: CONVERGE_MS })
+    .toBeGreaterThan(0);
   expect(await scoreOf(later.page)).toBe('0-0');
   await later.close();
 });
@@ -232,12 +252,7 @@ test('AC5: a player sees their own paddle at once, and the opponent lags', async
   await expectPlaying(first.page);
   await expectPlaying(second.page);
 
-  const box = await first.page.evaluate(() => {
-    const rect = (
-      document.getElementById('court') as HTMLCanvasElement
-    ).getBoundingClientRect();
-    return { left: rect.left, top: rect.top, height: rect.height };
-  });
+  const box = await courtBox(first.page);
   /** A whole viewport pixel a fraction of the way down the canvas. */
   const downCourt = (fraction: number): number => Math.round(box.top + box.height * fraction);
   /** Where that viewport y is on the court, scaled through the canvas's box. */
@@ -322,6 +337,47 @@ test('AC8: a client that rewrites its own copy has it overwritten, and nobody el
       { timeout: CONVERGE_MS },
     )
     .toBe(true);
+
+  await first.close();
+  await second.close();
+});
+
+test('the winner line goes when the game it announced does', async ({ browser }) => {
+  const table = freshTableId('announcement');
+  const first = await joinTable(browser, table);
+  const second = await joinTable(browser, table);
+  await expectPlaying(first.page);
+  await expectPlaying(second.page);
+
+  // A finished game, announced the way the table announces a real one: a final
+  // court, with the game-over on it. Forged rather than rallied to, because
+  // eleven points is minutes of suite time to reach a line of text.
+  await forge(first.page, {
+    kind: 'snapshot',
+    state: {
+      phase: 'game-over',
+      ball: { x: 400, y: 240, vx: 0, vy: 0 },
+      playerY: 200,
+      cpuY: 200,
+      score: { player: 11, cpu: 8 },
+      serveTimerMs: 0,
+      winner: 'player',
+      rngState: 0,
+    },
+    events: [{ kind: 'game-over', winner: 'player' }],
+  });
+
+  // It was announced — read from the history, because the table's next court is
+  // a thirtieth of a second behind it — and then it was taken back, because the
+  // court the table is broadcasting is a game still in play. A line left latched
+  // there is painted over the next game for as long as the connection holds.
+  await expect
+    .poll(() => statusesSeen(first.page), { timeout: CONVERGE_MS })
+    .toContain('You win!');
+  await expect.poll(() => statusOf(first.page), { timeout: CONVERGE_MS }).toBe('');
+
+  // And none of it reached the other browser.
+  expect(await statusesSeen(second.page)).not.toContain('You win!');
 
   await first.close();
   await second.close();

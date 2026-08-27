@@ -14,6 +14,8 @@
 
 import { expect, type Browser, type Page } from '@playwright/test';
 
+import { courtBox } from './pong';
+
 /** Where `wrangler dev` is started, and where the bundle is told to look. */
 export const TABLE_PORT = 8787;
 export const TABLE_URL = `ws://127.0.0.1:${TABLE_PORT}`;
@@ -62,7 +64,12 @@ export async function installSocketShim(page: Page, options: JoinOptions = {}): 
   await page.addInitScript(
     ({ latencyMs, blockSockets }: { latencyMs: number; blockSockets: boolean }) => {
       const real = window.WebSocket;
-      const tally = { attempts: 0, urls: [] as string[], closes: [] as string[] };
+      const tally = {
+        attempts: 0,
+        urls: [] as string[],
+        closes: [] as string[],
+        snapshots: 0,
+      };
       (window as unknown as { __sockets: typeof tally }).__sockets = tally;
       const live: WebSocket[] = [];
       /** Copies this shim itself dispatched, which must not be delayed again. */
@@ -105,6 +112,21 @@ export async function installSocketShim(page: Page, options: JoinOptions = {}): 
           // that simply broke closes with 1006 and does not.
           this.addEventListener('close', (event: CloseEvent) => {
             tally.closes.push(`${event.code}:${event.reason}`);
+          });
+          // How many courts the server has actually sent this page. The page
+          // ships 0-0 in its own markup, so a score read before the first
+          // snapshot is the markup's answer rather than the table's.
+          this.addEventListener('message', (event: MessageEvent) => {
+            if (redispatched.has(event)) {
+              return;
+            }
+            try {
+              if (JSON.parse(String(event.data)).kind === 'snapshot') {
+                tally.snapshots += 1;
+              }
+            } catch {
+              // Not something the table says; not a snapshot.
+            }
           });
           if (latencyMs > 0) {
             this.addEventListener('message', (event: MessageEvent) => {
@@ -183,10 +205,47 @@ export async function scoresSeen(page: Page): Promise<string[]> {
   return page.evaluate(() => (window as unknown as { __scores: string[] }).__scores);
 }
 
+/**
+ * Watch the line under the court and keep everything it ever said.
+ *
+ * For the same reason the score is watched rather than read: a line the next
+ * snapshot takes back a thirtieth of a second later is too quick to catch by
+ * looking, and "it said this and then stopped saying it" is the assertion.
+ */
+export async function watchStatus(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const seen: string[] = [];
+    (window as unknown as { __statuses: string[] }).__statuses = seen;
+    const element = document.getElementById('status');
+    if (element === null) {
+      return;
+    }
+    seen.push(element.textContent ?? '');
+    new MutationObserver(() => {
+      const now = element.textContent ?? '';
+      if (now !== seen[seen.length - 1]) {
+        seen.push(now);
+      }
+    }).observe(element, { childList: true, characterData: true, subtree: true });
+  });
+}
+
+/** Every line this page has ever shown under the court, in order. */
+export async function statusesSeen(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as unknown as { __statuses: string[] }).__statuses);
+}
+
 /** How many sockets this page tried to open. */
 export async function socketAttempts(page: Page): Promise<number> {
   return page.evaluate(
     () => (window as unknown as { __sockets: { attempts: number } }).__sockets.attempts,
+  );
+}
+
+/** How many courts the table has sent this page. */
+export async function snapshotsSeen(page: Page): Promise<number> {
+  return page.evaluate(
+    () => (window as unknown as { __sockets: { snapshots: number } }).__sockets.snapshots,
   );
 }
 
@@ -250,9 +309,10 @@ export async function prepareTablePage(
 /** Take a prepared context into a table. */
 export async function enterTable(seat: TablePage, tableId: string): Promise<void> {
   await seat.page.goto(`/?table=${encodeURIComponent(tableId)}`);
-  // After the page exists, because the observer watches elements on it. The
+  // After the page exists, because the observers watch elements on it. The
   // score starts at 0-0 either way, so nothing is missed by waiting.
   await watchScore(seat.page);
+  await watchStatus(seat.page);
 }
 
 /** Open a browser at a table, on its own context, the way a second person would. */
@@ -298,11 +358,6 @@ export async function expectPlaying(page: Page): Promise<void> {
  * point get scored while the test is busy asserting something else.
  */
 export async function parkPaddleAtTop(page: Page): Promise<void> {
-  const box = await page.evaluate(() => {
-    const rect = (
-      document.getElementById('court') as HTMLCanvasElement
-    ).getBoundingClientRect();
-    return { left: rect.left, top: rect.top, height: rect.height };
-  });
+  const box = await courtBox(page);
   await page.mouse.move(box.left + 100, Math.round(box.top + 2));
 }

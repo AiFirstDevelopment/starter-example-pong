@@ -14,7 +14,7 @@
 import { createAudio, soundFor } from './audio';
 import { createControls } from './input';
 import { joinTable, type TableSocket } from './net/table';
-import { SNAPSHOT_INTERVAL_MS } from './net/protocol';
+import { FIXED_DT_MS, SNAPSHOT_INTERVAL_MS } from './net/protocol';
 import { interpolate, render } from './render';
 import { readSession, singlePlayer, type Session } from './session';
 import { sessionStatusText } from './status';
@@ -22,7 +22,6 @@ import { readSeed } from './game/rng';
 import { createState, startGame, type GameState } from './game/state';
 import { movePaddle, step, type GameEvent } from './game/step';
 
-const FIXED_DT_MS = 1000 / 120;
 /** A backgrounded tab returns with a huge gap; do not simulate all of it. */
 const MAX_FRAME_MS = 250;
 
@@ -79,8 +78,19 @@ function showScore(): void {
   }
 }
 
+/**
+ * The line under the court, written only when it has changed.
+ *
+ * Guarded for the same reason `showScore` is. Single player only calls this
+ * when something happens, but a table calls it on every snapshot — thirty times
+ * a second — and `#status` is a `role="status"` live region: rewriting the same
+ * string would have a screen reader read it out thirty times a second.
+ */
 function showStatus(): void {
-  status.textContent = sessionStatusText(state, session);
+  const line = sessionStatusText(state, session);
+  if (status.textContent !== line) {
+    status.textContent = line;
+  }
 }
 
 /**
@@ -269,6 +279,10 @@ function startTable(tableId: string): void {
       arrivedMs = performance.now();
       state = next;
       showScore();
+      // The line is a function of the snapshot too, not only of the connection:
+      // a table's win is announced from the state, and a game that starts again
+      // — a seat refilled after one was won — has to take the announcement back.
+      showStatus();
       for (const event of events) {
         handle(event);
       }
