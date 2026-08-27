@@ -31,7 +31,7 @@ Each walked independently, not taken from a review.
 | AC | Met | Evidence |
 |---|---|---|
 | AC1 | **partly** | Met on a bare `/`: `tests/e2e/choose.spec.ts:23` asserts both controls are offered and that a key press and a click leave the court, the score and the sound log untouched. **Not met** on `?seed=` or `?table=`, which enter a game with no choice offered — `src/session.ts:65`. See **E1**. |
-| AC2 | yes | No existing spec was touched: `git diff --name-status f8ffd2b...HEAD -- tests/e2e/` reports three additions and no modifications. `tests/unit/{step,status}.test.ts` are additive only. The refactor is behaviour-preserving by inspection — `movePaddle` is the old left-paddle branch moved verbatim and the CPU branch is unchanged, reached by `right === null`. `tests/unit/step.test.ts:305` pins the computer to `CPU_SPEED` and asserts it is short of `PADDLE_SPEED`; `mouse.spec.ts:252` and `touch.spec.ts:358` still replay `?seed=` identically. |
+| AC2 | yes | No existing spec was touched: `git diff --name-status f8ffd2b...HEAD -- tests/e2e/` reports three additions and no modifications. `tests/unit/{step,status}.test.ts` are additive only. The refactor is behaviour-preserving by inspection — `movePaddle` is the old left-paddle branch moved verbatim and the CPU branch is unchanged, reached by `right === null`. `tests/unit/step.test.ts:307` pins the computer to `CPU_SPEED` and asserts it is short of `PADDLE_SPEED`; `mouse.spec.ts:252` and `touch.spec.ts:358` still replay `?seed=` identically. |
 | AC3 | yes | `tests/e2e/table.spec.ts:77` — two contexts, opposite `You`/`Opponent` labels, and the two score histories compared entry by entry rather than sampled. |
 | AC4 | yes | `tests/e2e/table.spec.ts:113` — the third browser gets the in-use message and no paddle; the other two are asserted silent and their score only goes up. |
 | AC5 | yes | `tests/e2e/table.spec.ts:245` — 200 ms each way, own paddle within one pixel of the pointer on the frame it drew, opponent's still where it was, and arriving later. |
@@ -47,7 +47,7 @@ reviewer's word.
 
 | Finding | Lens | Severity | Disposition | Reasoning |
 |---|---|---|---|---|
-| F1 | behavior | major | Escalated (**E3**) | Confirmed. `startGame` is reached only from `seat()` at `worker/table.ts:123` when the second seat fills, `step()` returns unchanged on `game-over`, and `ClientMessage` carries nothing else. A table that reaches 11 is frozen until somebody disconnects. An exit needs a protocol message and a client path, and whether a table is one game or many is not mine to choose. |
+| F1 | behavior | major | Escalated (**E3**) | Confirmed. `startGame` is reached only from `seat()` at `worker/table.ts:122` when the second seat fills, `step()` returns unchanged on `game-over`, and `ClientMessage` carries nothing else. A table that reaches 11 is frozen until somebody disconnects. An exit needs a protocol message and a client path, and whether a table is one game or many is not mine to choose. |
 | F2 | behavior | major | **Accepted** | Confirmed. `onSnapshot` refreshed the score and never the line, so the winner announcement outlived the game it announced. Fixed, with a regression test. |
 | F3 | behavior | minor | Rejected | Real but overstated. The chooser does not come back after `refused` or `lost`, and that is a rough edge — but the message says "Agree another id and try that one", which a reload does, and the reviewer confirms the reload works. A real re-entry path is not two lines: `startTable` sets `started`, the `requestAnimationFrame` loop never stops and the socket is never torn down, so an unhidden form would be a control that does nothing. Larger work than this change; recorded as a follow-up. |
 | F1 | correctness | major | Escalated (**E3**) | The same defect as behavior/F1, reached independently from the server side. Same escalation. |
@@ -55,7 +55,7 @@ reviewer's word.
 | F1 | spec-fidelity | minor | Escalated (**E1**) | Confirmed against `src/session.ts:65` and `src/main.ts`. A recorded `PLAN DEFECT`; the builder asked for it to be put to you, and it is not mine to settle. |
 | F2 | spec-fidelity | minor | Escalated (**E2**) | Confirmed, and reproduced: this machine's default Node is 20.16.0, and the suite cannot run on it — `wrangler` 4.126.0 declares `engines.node >= 22`. A recorded `PLAN DEFECT`. |
 | F3 | spec-fidelity | nit | **Accepted** | Confirmed: `TEST_IDLE_TIMEOUT_MS` is 3000 and the README said two seconds. Fixed. |
-| F1 | security | major | Escalated (**E4**) | Confirmed by reading the route: `worker/table.ts:318` hands any path segment to `idFromName` with no origin check, no rate limit and no authentication, and `startLoop()` broadcasts at 30 Hz on a single-seat table. An `Origin` allow-list needs the production origins, and rate limiting needs a Cloudflare binding — deployment facts I do not have. Deliberately left out per the build notes, which makes it a decision, not an oversight. |
+| F1 | security | major | Escalated (**E4**) | Confirmed by reading the route: `worker/table.ts:308` hands any path segment to `idFromName` with no origin check, no rate limit and no authentication, and `startLoop()` broadcasts at 30 Hz on a single-seat table. An `Origin` allow-list needs the production origins, and rate limiting needs a Cloudflare binding — deployment facts I do not have. Deliberately left out per the build notes, which makes it a decision, not an oversight. |
 | F1 | simplicity | minor | **Accepted** | Confirmed by enumerating the only caller: the guard `this.idle === null && this.lastTickMs > 0` is reachable only after the timer has already recreated the game, and the eviction case it claims to cover cannot happen because the table keeps nothing in storage. Deleted, and the rationale moved to where the timer is armed. |
 | F2 | simplicity | minor | **Accepted** | Confirmed: a third copy of the canvas box reader, in a codebase that documents "one reader of the element, not two". Both copies now call `courtBox`. |
 | F3 | simplicity | minor | Rejected | The facts are right — `close` always follows `error`, so the listener only moves `onLost` one task earlier, and the `closed` flag already makes a double notification impossible. But it is eight lines of redundancy on a connection-failure path, not complexity that will mislead, and removing it makes the client rely on an ordering guarantee it currently does not need. A preference; recorded as a follow-up. |
@@ -66,20 +66,20 @@ reviewer's word.
 
 ## Changes applied
 
-- `src/main.ts:81` — `showStatus()` writes only when the line has changed, the
+- `src/main.ts:89` — `showStatus()` writes only when the line has changed, the
   way `showScore()` already did, so calling it thirty times a second does not
   make a `role="status"` region say the same thing thirty times a second.
-- `src/main.ts:282` — `onSnapshot` refreshes the line as well as the score
+- `src/main.ts:285` — `onSnapshot` refreshes the line as well as the score
   (behavior/F2, correctness/F2). Without it a table's winner announcement was
   painted over the next game for as long as the connection held.
 - `tests/e2e/table.spec.ts:345` — new: the winner line goes when the game it
   announced does. Fails 3 of 3 without the fix above, passes 3 of 3 with it.
 - `tests/e2e/support/table.ts` — a status observer beside the existing score
   observer, so "it said this and then stopped saying it" is assertable.
-- `tests/e2e/table.spec.ts:198` — AC7 reads the score to come back to after the
+- `tests/e2e/table.spec.ts:206` — AC7 reads the score to come back to after the
   table has frozen, from the player still there, rather than out of a running
   rally (test-quality/F1).
-- `tests/e2e/table.spec.ts:236` — AC7 waits for a court from the table before
+- `tests/e2e/table.spec.ts:239` — AC7 waits for a court from the table before
   reading the score off the page (test-quality/F2), with a snapshot counter in
   the socket shim to gate on.
 - `tests/e2e/support/table.ts` + `tests/e2e/table.spec.ts` — both inline canvas
@@ -172,7 +172,7 @@ than shipping the gap.
 
 ### E4 — The table Worker is public and unauthenticated. Settle before deploying.
 
-`worker/table.ts:318` routes any attacker-chosen path segment to a fresh Durable
+`worker/table.ts:308` routes any attacker-chosen path segment to a fresh Durable
 Object with no authentication, no `Origin` allow-list and no rate limit. The
 security lens measured the amplification against a real `wrangler dev`: about 29
 broadcast frames a second to a table with one occupant and no opponent, because

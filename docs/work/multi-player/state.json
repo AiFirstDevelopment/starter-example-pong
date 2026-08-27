@@ -1,8 +1,8 @@
 {
   "slug": "multi-player",
   "branch": "feature/multi-player",
-  "stage": "built",
-  "updated": "2026-08-27T02:14:45Z",
+  "stage": "adjudicated",
+  "updated": "2026-08-27T03:06:31Z",
   "plan": {
     "acs": 9,
     "steps": 10,
@@ -15,10 +15,36 @@
     "suite": "green",
     "head": "c329ab1"
   },
+  "review": {
+    "round": 1,
+    "lenses": [
+      "behavior",
+      "correctness",
+      "spec-fidelity",
+      "security",
+      "simplicity",
+      "test-quality"
+    ],
+    "missing": [],
+    "findings": 16,
+    "blockers": 0,
+    "head": "635ae6e"
+  },
+  "verdict": {
+    "outcome": "ready with follow-ups",
+    "suite": "green",
+    "accepted": 8,
+    "rejected": 3,
+    "unmet": 1,
+    "escalations": 4,
+    "head": "a6e43b9"
+  },
   "log": [
     "2026-08-27T01:19:34Z 1-plan planned 9 ACs, 10 steps, 0 open questions; branched from main at f8ffd2b. Server-authoritative Durable Object; user chose one run over splitting the simulation refactor out.",
     "2026-08-27T01:32:10Z plan approved by user via 1-plan",
     "2026-08-27T01:32:10Z pipeline launched, diffRange f8ffd2b...HEAD (forked from main)",
-    "2026-08-27T02:14:45Z 2-build built 10/10, 9 deviations incl. 2 plan defects (AC1-vs-AC2, Node 20->22), suite green: 74 unit + 55 e2e on macOS and in the CI Linux image"
+    "2026-08-27T02:14:45Z 2-build built 10/10, 9 deviations incl. 2 plan defects (AC1-vs-AC2, Node 20->22), suite green: 74 unit + 55 e2e on macOS and in the CI Linux image",
+    "2026-08-27T02:49:20Z panel complete, adjudication started",
+    "2026-08-27T03:06:31Z 4-quorum adjudicated ready with follow-ups: 8 accepted, 3 rejected, 4 escalations, AC1 unmet as written; suite green 74 unit + 56 e2e on Node 22, networked specs 120/120"
   ]
 }
