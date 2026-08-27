@@ -1,8 +1,8 @@
 {
   "slug": "harden-and-rematch",
   "branch": "feature/harden-and-rematch",
-  "stage": "reviewed",
-  "updated": "2026-08-27T08:37:22Z",
+  "stage": "adjudicated",
+  "updated": "2026-08-27T08:57:31Z",
   "plan": {
     "acs": 8,
     "steps": 8,
@@ -15,11 +15,37 @@
     "suite": "green",
     "head": "558702d"
   },
+  "review": {
+    "round": 1,
+    "lenses": [
+      "behavior",
+      "correctness",
+      "spec-fidelity",
+      "security",
+      "simplicity",
+      "test-quality"
+    ],
+    "missing": [],
+    "findings": 13,
+    "blockers": 0,
+    "head": "67f1dd9"
+  },
+  "verdict": {
+    "outcome": "ready with follow-ups",
+    "suite": "green",
+    "accepted": 6,
+    "rejected": 4,
+    "unmet": 0,
+    "escalations": 3,
+    "head": "5453dec"
+  },
   "log": [
     "2026-08-27T05:29:27Z 1-plan planned 8 ACs, 8 steps, 0 open questions; branched from main at 17af241. Closes multi-player escalations E3 (rematch) and E4 (harden before deploy).",
     "2026-08-27T07:18:13Z plan approved by user via 1-plan",
     "2026-08-27T07:18:13Z pipeline launched, diffRange 17af241...HEAD (forked from main)",
     "2026-08-27T08:03:30Z 2-build built 8/8, 6 deviations incl. 1 plan defect (rate-limit key vs the local suite), suite green: 88 unit + 63 e2e on macOS and in a Node 22 Linux image",
-    "2026-08-27T08:37:22Z panel complete, adjudication started"
+    "2026-08-27T08:37:22Z panel complete, adjudication started",
+    "2026-08-27T08:57:31Z 3-review round 1 recorded by the judge on the scribe's behalf: 6 lenses, 0 missing, 13 findings, 0 blockers, read at 67f1dd9",
+    "2026-08-27T08:57:31Z 4-quorum adjudicated ready with follow-ups: 6 accepted, 4 rejected, 3 escalations (E1 loopback rate-limit carve-out, E2 one-socket table never reclaimed, E3 localhost in the deployed allow-list), 0 unmet; suite green 92 unit + 63 e2e on macOS and node:22-bookworm"
   ]
 }
