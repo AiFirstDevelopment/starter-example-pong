@@ -47,12 +47,15 @@ export interface Span {
 /**
  * The canvas's box on screen, in viewport coordinates.
  *
- * No width: the mapping under test is purely vertical, and advertising a
- * horizontal half would suggest the pointer's x mattered to it.
+ * The mapping under test is purely vertical, so the drag tests read `top` and
+ * `height` and nothing else; `width` is here for the landscape tests, which
+ * measure the shape the court is drawn at and need both axes to divide one by
+ * the other. One reader of the element, not two.
  */
 export interface Box {
   left: number;
   top: number;
+  width: number;
   height: number;
 }
 
@@ -234,7 +237,7 @@ export async function courtBox(page: Page): Promise<Box> {
     const rect = (
       document.getElementById('court') as HTMLCanvasElement
     ).getBoundingClientRect();
-    return { left: rect.left, top: rect.top, height: rect.height };
+    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
   });
 }
 
