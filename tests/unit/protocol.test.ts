@@ -28,6 +28,26 @@ describe('parseClientMessage', () => {
     }
   });
 
+  it('reads a rematch a browser asked for', () => {
+    expect(parseClientMessage(JSON.stringify({ kind: 'rematch' }))).toEqual({ kind: 'rematch' });
+  });
+
+  it('drops anything that is only nearly a rematch', () => {
+    // The kind is the whole message, so the kind is the whole of what there is
+    // to get wrong — and a table that took any of these for a rematch would
+    // wipe the score of a game two people are in the middle of.
+    for (const raw of [
+      '"rematch"',
+      JSON.stringify({ kind: 'Rematch' }),
+      JSON.stringify({ kind: 'rematch ' }),
+      JSON.stringify({ kind: ['rematch'] }),
+      JSON.stringify({ rematch: true }),
+      JSON.stringify([{ kind: 'rematch' }]),
+    ]) {
+      expect(parseClientMessage(raw)).toBeNull();
+    }
+  });
+
   it('drops a target that is not a number the court can hold', () => {
     // A paddle put somewhere that is not a number stays there for the rest of
     // the game, and the server is holding that paddle for somebody else as

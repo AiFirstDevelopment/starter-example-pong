@@ -52,9 +52,10 @@ export interface JoinOptions {
 /**
  * Wrap `window.WebSocket` before the page loads.
  *
- * Three things a test needs and a page cannot otherwise be asked for: how many
- * sockets it opened, a delay on the wire in both directions, and a way to put a
- * message into the client that the server never sent.
+ * Four things a test needs and a page cannot otherwise be asked for: how many
+ * sockets it opened, a delay on the wire in both directions, a way to put a
+ * message into the client that the server never sent, and a way to send the
+ * table one the client itself would not.
  *
  * The delay is done by intercepting the message before the game's own listener
  * — registered here, in the constructor, so it is registered first — stopping it
@@ -163,6 +164,13 @@ export async function installSocketShim(page: Page, options: JoinOptions = {}): 
         redispatched.add(event);
         socket.dispatchEvent(event);
       };
+      (window as unknown as { __say: (data: string) => void }).__say = (data: string) => {
+        const socket = live[live.length - 1];
+        if (socket === undefined) {
+          throw new Error('the page has not opened a socket to say anything on');
+        }
+        socket.send(data);
+      };
     },
     { latencyMs: options.latencyMs ?? 0, blockSockets: options.blockSockets ?? false },
   );
@@ -254,6 +262,20 @@ export async function socketCloses(page: Page): Promise<string[]> {
   return page.evaluate(
     () => (window as unknown as { __sockets: { closes: string[] } }).__sockets.closes,
   );
+}
+
+/**
+ * Say something to the table over this page's own socket.
+ *
+ * The other direction from `forge`, and there for the same reason: the rules a
+ * table applies to what it is asked are the server's, and a test that can only
+ * ask through the client is testing the client's manners instead. This is the
+ * message a browser that had been tampered with would send.
+ */
+export async function say(page: Page, message: unknown): Promise<void> {
+  await page.evaluate((data: string) => {
+    (window as unknown as { __say: (raw: string) => void }).__say(data);
+  }, JSON.stringify(message));
 }
 
 /** Put a message into the page's client that the table never sent. */
@@ -348,6 +370,18 @@ export async function expectPlaying(page: Page): Promise<void> {
   await expect
     .poll(() => statusOf(page), { timeout: CONVERGE_MS })
     .toBe('');
+}
+
+/**
+ * Put a player's paddle across the middle of the court and leave it there.
+ *
+ * The opposite of `parkPaddleAtTop`: a paddle in the way is what makes a rally
+ * last, which is what a test needs when it is about to look at a court and
+ * would rather the score did not move while it does.
+ */
+export async function parkPaddleAtCentre(page: Page): Promise<void> {
+  const box = await courtBox(page);
+  await page.mouse.move(box.left + 100, Math.round(box.top + box.height / 2));
 }
 
 /**

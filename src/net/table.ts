@@ -33,6 +33,14 @@ export interface TableSocket {
    * on applying what they last asked for.
    */
   report: (input: Input, now: number) => void;
+  /**
+   * Ask the table for another game.
+   *
+   * Only a request: the server holds the game, and it starts one only if this
+   * socket has a seat and the last game is over. Sent on the gesture rather
+   * than at a rate, because a player presses a key once.
+   */
+  rematch: () => void;
   close: () => void;
 }
 
@@ -124,6 +132,12 @@ export function joinTable(tableId: string, events: TableEvents): TableSocket {
       lastSent = input;
       lastSentMs = now;
       socket.send(JSON.stringify({ kind: 'input', input }));
+    },
+    rematch: (): void => {
+      if (socket.readyState !== WebSocket.OPEN) {
+        return;
+      }
+      socket.send(JSON.stringify({ kind: 'rematch' }));
     },
     close: (): void => {
       closed = true;
