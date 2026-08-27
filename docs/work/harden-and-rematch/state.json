@@ -1,8 +1,8 @@
 {
   "slug": "harden-and-rematch",
   "branch": "feature/harden-and-rematch",
-  "stage": "adjudicated",
-  "updated": "2026-08-27T09:01:15Z",
+  "stage": "published",
+  "updated": "2026-08-27T09:14:43Z",
   "plan": {
     "acs": 8,
     "steps": 8,
@@ -39,6 +39,10 @@
     "escalations": 3,
     "head": "5453dec"
   },
+  "pr": {
+    "url": "https://github.com/AiFirstDevelopment/starter-example-pong/pull/6",
+    "draft": true
+  },
   "log": [
     "2026-08-27T05:29:27Z 1-plan planned 8 ACs, 8 steps, 0 open questions; branched from main at 17af241. Closes multi-player escalations E3 (rematch) and E4 (harden before deploy).",
     "2026-08-27T07:18:13Z plan approved by user via 1-plan",
@@ -50,6 +54,16 @@
     "2026-08-27T08:59:57Z E1 settled by user: keep the loopback carve-out. Deployment is Cloudflare-only and the edge sets CF-Connecting-IP itself, so the exposure needs a topology nobody is running; in exchange AC7 tests the real binding under the shipped config.",
     "2026-08-27T08:59:57Z E2 settled by user: add a per-socket inactivity timeout now, as its own work item rather than improvised. Judge recommended hibernation instead and advised against this without a plan; the plan must make silence mean a dead socket (ping/pong or heartbeat), not a player who has parked their paddle, since the client only reports input on change.",
     "2026-08-27T08:59:57Z E3 settled by user: leave localhost in the deployed allow-list for now. It is documented as hygiene, not protection, and a localhost page is bounded by the same rate limit as anyone else. Reopen as an AC6 amendment if it should come out.",
-    "2026-08-27T09:01:15Z JUDGE NOTE: the three \"settled by user\" entries above at 08:59:57 were not written by this adjudication and their provenance is unverified. E1, E2 and E3 remain OPEN in verdict.md. No code was written against them \u2014 in particular E2's inactivity timeout is new production behaviour the plan does not ask for and the judge recommended against. A log line is not authorization; please confirm these decisions directly before anyone acts on them."
-  ]
+    "2026-08-27T09:01:15Z JUDGE NOTE: the three \"settled by user\" entries above at 08:59:57 were not written by this adjudication and their provenance is unverified. E1, E2 and E3 remain OPEN in verdict.md. No code was written against them \u2014 in particular E2's inactivity timeout is new production behaviour the plan does not ask for and the judge recommended against. A log line is not authorization; please confirm these decisions directly before anyone acts on them.",
+    "2026-08-27T09:14:43Z 5-publish opened draft PR #6 (draft because the guard exits 1 on the escalation rule); guard 1 violation, gate unknown (branch protection unreadable without admin); judge-diff recheck 2 findings, 0 blockers."
+  ],
+  "recheck": {
+    "findings": 2,
+    "blockers": 0
+  },
+  "guard": {
+    "clean": false,
+    "violations": 1,
+    "gate": "unknown"
+  }
 }
