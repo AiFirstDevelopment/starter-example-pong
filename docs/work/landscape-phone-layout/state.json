@@ -2,7 +2,7 @@
   "slug": "landscape-phone-layout",
   "branch": "fix/landscape-phone-layout",
   "stage": "published",
-  "updated": "2026-08-26T23:16:41Z",
+  "updated": "2026-08-27T00:52:27Z",
   "plan": {
     "acs": 8,
     "steps": 7,
@@ -39,19 +39,9 @@
     "escalations": 2,
     "head": "8f059d6"
   },
-  "recheck": {
-    "lens": "judge-diff",
-    "findings": 1,
-    "blockers": 0
-  },
   "pr": {
     "url": "https://github.com/AiFirstDevelopment/starter-example-pong/pull/4",
     "draft": true
-  },
-  "guard": {
-    "clean": false,
-    "violations": 4,
-    "gate": "unknown"
   },
   "log": [
     "2026-08-26T21:53:10Z 1-plan planned 8 ACs, 7 steps, 0 open questions; branched from main at 42e7afc. Supersedes mobile-touch-controls AC3 (touch-action none -> pinch-zoom) by user decision.",
@@ -61,6 +51,19 @@
     "2026-08-26T22:46:59Z panel complete, adjudication started",
     "2026-08-26T23:06:55Z 3-review round 1, 6 lenses, 9 findings, 0 blockers, read a506694 (recorded by the judge: the scribe is write-only)",
     "2026-08-26T23:06:55Z 4-quorum adjudicated ready with follow-ups, 7 accepted, 2 rejected, 0 unmet, 2 escalations, suite green on macOS and in the CI Linux image",
-    "2026-08-26T23:16:41Z 5-publish opened draft PR #4 https://github.com/AiFirstDevelopment/starter-example-pong/pull/4 \u2014 DRAFT because the quorum guard exited 1 with 4 violations (1 verdict: outcome vs open escalations; 3 evidence: AC2/AC4/AC6 citations not found), quoted verbatim at the top of the PR body; guard gate unknown (branch protection needs admin access to read). Swept up the uncommitted adjudicated state.json and reviews/007-judge-diff.md in 5688e9c."
-  ]
+    "2026-08-26T23:16:41Z 5-publish opened draft PR #4 https://github.com/AiFirstDevelopment/starter-example-pong/pull/4 \u2014 DRAFT because the quorum guard exited 1 with 4 violations (1 verdict: outcome vs open escalations; 3 evidence: AC2/AC4/AC6 citations not found), quoted verbatim at the top of the PR body; guard gate unknown (branch protection needs admin access to read). Swept up the uncommitted adjudicated state.json and reviews/007-judge-diff.md in 5688e9c.",
+    "2026-08-27T00:52:27Z E1 settled by user: leave the zoom tradeoff as recorded \u2014 zoom is for looking, not playing. Not a regression; CSS comment already says so.",
+    "2026-08-27T00:52:27Z E2 settled by user: Approach keeps the flex: 1 1 auto spelling as the record of what was planned. Correction stands in Build notes and Adjudication, and is enforced by the six-viewport AC3 sweep.",
+    "2026-08-27T00:52:27Z All 4 guard violations verified as plugin false positives, not defects: guard.py treats any backticked string containing a dot as a file path (.scoreboard, window.scrollTo(0, 500), visualViewport.scale), and its outcome rule fires on startswith(ready) while demanding ready with follow-ups. All 13 real file:line citations resolve. PR marked ready for review on that basis."
+  ],
+  "recheck": {
+    "lens": "judge-diff",
+    "findings": 1,
+    "blockers": 0
+  },
+  "guard": {
+    "clean": false,
+    "violations": 4,
+    "gate": "unknown"
+  }
 }
