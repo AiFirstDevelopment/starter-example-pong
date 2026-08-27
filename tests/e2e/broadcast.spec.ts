@@ -4,9 +4,12 @@ import { ballAt, paddleAt } from './support/pong';
 import {
   CONVERGE_MS,
   closeTables,
+  enterTable,
   expectPlaying,
   freshTableId,
   joinTable,
+  parkPaddleAtTop,
+  prepareTablePage,
   scoreOf,
   snapshotsSeen,
   statusOf,
@@ -32,16 +35,52 @@ test.afterEach(closeTables);
 
 test('AC3, AC4: one player at a table gets a court, and then silence', async ({ browser }) => {
   const table = freshTableId('one-player');
-  const alone = await joinTable(browser, table);
+  // Opened now, entered later: a context is the best part of a second to make,
+  // and the lone player below has to reach the table inside its idle timeout or
+  // the game they are meant to be shown is thrown away before they get there.
+  const alone = await prepareTablePage(browser);
+
+  // First, a game with a score in it, left frozen at the table. That score is
+  // what makes AC4 mean anything: index.html ships 0-0 in its own markup and
+  // `render` paints a centred paddle and a centre-spot ball on every frame from
+  // the first one, so at a *fresh* table a player who was sent nothing at all
+  // looks exactly like a player who was sent a court. A score of 3-1 does not
+  // come from anywhere but the table.
+  const first = await joinTable(browser, table);
+  const second = await joinTable(browser, table);
+  await expectPlaying(first.page);
+  await expectPlaying(second.page);
+  await parkPaddleAtTop(first.page);
+  await parkPaddleAtTop(second.page);
+  await expect
+    .poll(() => scoreOf(second.page), { timeout: CONVERGE_MS })
+    .not.toBe('0-0');
+
+  // Read once the game has stopped rather than while it is running: with one
+  // player gone there is no loop, so this is the score the table is holding and
+  // not one that moved on between reading it and asserting it.
+  await first.close();
+  await expect
+    .poll(() => statusOf(second.page), { timeout: CONVERGE_MS })
+    .toContain('Your opponent left');
+  const frozen = await scoreOf(second.page);
+  expect(frozen).not.toBe('0-0');
+  await second.close();
+
+  // And now one player, alone, at that table.
+  await enterTable(alone, table);
   await expect
     .poll(() => statusOf(alone.page), { timeout: CONVERGE_MS })
     .toContain('Waiting for another player');
 
   // AC4 first, because AC3 is the reason it could go: the one court sent on
-  // seating is what the player waiting is looking at. The score comes from the
-  // table rather than from the markup only once a snapshot has arrived.
+  // seating is what the player waiting is looking at, and the score on it is
+  // the table's — a page that was sent no court at all would still be showing
+  // the 0-0 its markup ships with.
   await expect.poll(() => snapshotsSeen(alone.page), { timeout: CONVERGE_MS }).toBeGreaterThan(0);
-  expect(await scoreOf(alone.page)).toBe('0-0');
+  await expect
+    .poll(() => scoreOf(alone.page), { timeout: CONVERGE_MS })
+    .toBe(frozen);
   const paddle = await paddleAt(alone.page, 'player');
   expect(paddle.top).toBeGreaterThanOrEqual(0);
   expect(await ballAt(alone.page)).not.toBeNull();

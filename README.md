@@ -110,8 +110,14 @@ npm run deploy:site    # the page, onto Pages
 
 | Piece | Where |
 |---|---|
-| the page | `https://pong.pages.dev` (Cloudflare Pages project `pong`) |
+| the page | `https://pong-3su.pages.dev` (Cloudflare Pages project `pong`) |
 | the tables | `https://pong-table.joelstevick.workers.dev` (Worker `pong-table`) |
+
+The project is `pong` but the site is served at `pong-3su.pages.dev`: the bare
+`pong.pages.dev` subdomain was already taken by somebody else, so Pages gave
+this project a suffixed one. The suffixed host is the real one, and it is the
+host `ALLOWED_ORIGINS` below has to name — an allow-list written against
+`pong.pages.dev` would refuse every player on the deployed site.
 
 The bundle is told the table server's address at build time through
 `VITE_TABLE_URL`, which `.env.production` sets to the Worker above. Point it

@@ -13,6 +13,7 @@ import {
   scoreOf,
   scoresSeen,
   statusOf,
+  statusesSeen,
   watchScore,
   watchStatus,
 } from './support/table';
@@ -99,8 +100,22 @@ test('AC1: either player starts another game once one has been won', async ({ br
   // Both browsers: back to 0-0, no winner line, and a ball in play.
   await expect.poll(() => scoresSeen(first.page), { timeout: CONVERGE_MS }).toContain('0-0');
   await expect.poll(() => scoresSeen(second.page), { timeout: CONVERGE_MS }).toContain('0-0');
-  await expect.poll(() => statusOf(first.page), { timeout: CONVERGE_MS }).toBe('');
-  await expect.poll(() => statusOf(second.page), { timeout: CONVERGE_MS }).toBe('');
+  // The line is read from its whole history rather than as it stands now. What
+  // AC1 asks for is that the winner line came *down*, and a run in which it had
+  // never been shown at all would read identically at a glance — an empty line
+  // now says nothing about whether there was ever one to take back.
+  for (const page of [first.page, second.page]) {
+    await expect
+      .poll(
+        async () => {
+          const seen = await statusesSeen(page);
+          return seen[seen.length - 1];
+        },
+        { timeout: CONVERGE_MS },
+      )
+      .toBe('');
+    expect((await statusesSeen(page))[0]).toMatch(/wins?!/);
+  }
   await expectBallInPlay(first.page);
   await expectBallInPlay(second.page);
 
@@ -142,8 +157,11 @@ test('AC2: a rematch in the middle of a rally changes nothing', async ({ browser
     expect(seen).not.toContain('0-0');
     expect(totals(seen)).toEqual([...totals(seen)].sort((a, b) => a - b));
   }
-  // And the rally is still a rally: no winner line, and the ball still moving.
-  expect(await statusOf(first.page)).toBe('');
+  // And the rally is still a rally: no winner line at any point in it — read
+  // from the history, because a game that restarted and was won again would
+  // have shown a line and taken it back inside the second waited above — and
+  // the ball still moving.
+  expect(await statusesSeen(first.page)).toEqual(['']);
   await expectBallInPlay(first.page);
 
   await first.close();

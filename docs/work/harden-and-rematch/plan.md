@@ -2,7 +2,7 @@
 
 - **Slug:** harden-and-rematch
 - **Branch:** feature/harden-and-rematch
-- **Status:** built
+- **Status:** adjudicated
 
 ## Intent
 
