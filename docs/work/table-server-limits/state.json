@@ -2,7 +2,7 @@
   "slug": "table-server-limits",
   "branch": "fix/table-server-limits",
   "stage": "built",
-  "updated": "2026-08-27T10:04:08Z",
+  "updated": "2026-08-27T10:20:47Z",
   "plan": {
     "acs": 7,
     "steps": 9,
@@ -19,6 +19,7 @@
     "2026-08-27T09:34:40Z 1-plan planned 7 ACs, 9 steps, 0 open questions; branched from main at 844d8bc. Carries harden-and-rematch E2 (as an inactivity timeout, user's choice over hibernation), judge-diff F1 (IPv6 case), and the entry-pinning the last verdict could not close.",
     "2026-08-27T09:39:01Z plan approved by user via 1-plan",
     "2026-08-27T09:39:01Z pipeline launched, diffRange 844d8bc...HEAD (forked from main)",
-    "2026-08-27T10:04:08Z 2-build built 9/9, 4 deviations (no PLAN DEFECTs), suite green: 102 unit across two vitest projects + 65 behavioural, on macOS and in node:22-bookworm"
+    "2026-08-27T10:04:08Z 2-build built 9/9, 4 deviations (no PLAN DEFECTs), suite green: 102 unit across two vitest projects + 65 behavioural, on macOS and in node:22-bookworm",
+    "2026-08-27T10:20:47Z Review round stopped by user before any lens wrote; build stage complete and committed at a638bad. Resume with /quorum:3-review then /quorum:4-quorum on this branch, or /quorum:pipeline with skipBuild. The workflow run wf_18b8a7a2-f33 is not resumable across sessions."
   ]
 }
