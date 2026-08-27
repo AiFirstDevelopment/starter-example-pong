@@ -1,0 +1,17 @@
+{
+  "slug": "multi-player",
+  "branch": "feature/multi-player",
+  "stage": "building",
+  "updated": "2026-08-27T01:32:10Z",
+  "plan": {
+    "acs": 9,
+    "steps": 10,
+    "open": 0,
+    "requirementsHash": "943b558acff8e9c4555402e8d479f0090f4e1ad958f9d37b51a99417ed09306e"
+  },
+  "log": [
+    "2026-08-27T01:19:34Z 1-plan planned 9 ACs, 10 steps, 0 open questions; branched from main at f8ffd2b. Server-authoritative Durable Object; user chose one run over splitting the simulation refactor out.",
+    "2026-08-27T01:32:10Z plan approved by user via 1-plan",
+    "2026-08-27T01:32:10Z pipeline launched, diffRange f8ffd2b...HEAD (forked from main)"
+  ]
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { CPU_SPEED } from '../../src/game/cpu';
 import { NO_INPUT, step, type GameEvent } from '../../src/game/step';
 import {
   BALL_RADIUS,
@@ -297,5 +298,83 @@ describe('idle', () => {
 
     expect(state).toBe(start);
     expect(events).toEqual([]);
+  });
+});
+
+describe('the right-hand paddle', () => {
+  const centred = (COURT_HEIGHT - PADDLE_HEIGHT) / 2;
+
+  it('is played by the computer, at the computer speed, when no input is given', () => {
+    // The ball is on its way into the computer's half and well below the
+    // paddle, so the computer is chasing it at full tilt.
+    const start = rally(
+      { x: COURT_WIDTH * 0.75, y: COURT_HEIGHT - 40, vx: BALL_SPEED, vy: 0 },
+      { cpuY: centred },
+    );
+
+    const { state } = step(start, TICK_MS, NO_INPUT);
+
+    expect(state.cpuY).toBeCloseTo(centred + (CPU_SPEED * TICK_MS) / 1000);
+    // And a long way short of what a held key would have bought it.
+    expect(state.cpuY).toBeLessThan(centred + (PADDLE_SPEED * TICK_MS) / 1000);
+  });
+
+  it('leaves the computer to it whether the fourth argument is absent or null', () => {
+    const start = rally(
+      { x: COURT_WIDTH * 0.75, y: COURT_HEIGHT - 40, vx: BALL_SPEED, vy: 0 },
+      { cpuY: centred },
+    );
+
+    expect(step(start, TICK_MS, NO_INPUT, null).state).toEqual(
+      step(start, TICK_MS, NO_INPUT).state,
+    );
+  });
+
+  it('answers a held key at the human paddle speed when one is given', () => {
+    const start = rally({ vx: 0, vy: 0 }, { cpuY: centred });
+
+    const up = step(start, TICK_MS, NO_INPUT, { ...NO_INPUT, up: true }).state;
+    const down = step(start, TICK_MS, NO_INPUT, { ...NO_INPUT, down: true }).state;
+
+    expect(up.cpuY).toBeCloseTo(centred - (PADDLE_SPEED * TICK_MS) / 1000);
+    expect(down.cpuY).toBeCloseTo(centred + (PADDLE_SPEED * TICK_MS) / 1000);
+  });
+
+  it('centres itself on a named position, inside the court, like the left one', () => {
+    const start = rally({ vx: 0, vy: 0 }, { cpuY: centred });
+
+    expect(step(start, TICK_MS, NO_INPUT, { ...NO_INPUT, targetY: 300 }).state.cpuY).toBe(
+      300 - PADDLE_HEIGHT / 2,
+    );
+    expect(step(start, TICK_MS, NO_INPUT, { ...NO_INPUT, targetY: -500 }).state.cpuY).toBe(0);
+    expect(step(start, TICK_MS, NO_INPUT, { ...NO_INPUT, targetY: 5000 }).state.cpuY).toBe(
+      COURT_HEIGHT - PADDLE_HEIGHT,
+    );
+  });
+
+  it('moves each paddle from its own input and neither from the other', () => {
+    const start = rally({ vx: 0, vy: 0 }, { playerY: centred, cpuY: centred });
+
+    const { state } = step(
+      start,
+      TICK_MS,
+      { ...NO_INPUT, targetY: 100 },
+      { ...NO_INPUT, targetY: 400 },
+    );
+
+    expect(state.playerY).toBe(100 - PADDLE_HEIGHT / 2);
+    expect(state.cpuY).toBe(400 - PADDLE_HEIGHT / 2);
+  });
+
+  it('still bounces the ball off the paddle a human is driving', () => {
+    const start = rally(
+      { x: CPU_X - BALL_RADIUS, y: COURT_HEIGHT / 2, vx: BALL_SPEED, vy: 0 },
+      { cpuY: centred },
+    );
+
+    const { state, events } = step(start, TICK_MS, NO_INPUT, NO_INPUT);
+
+    expect(events).toEqual([{ kind: 'paddle-hit', side: 'cpu' }]);
+    expect(state.ball.vx).toBeLessThan(0);
   });
 });

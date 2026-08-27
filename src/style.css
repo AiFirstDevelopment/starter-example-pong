@@ -98,6 +98,44 @@ canvas {
   margin: 0;
 }
 
+/*
+ * The choice between the one-player game and a table.
+ *
+ * `hidden` has to be spelled out: the attribute's own `display: none` comes
+ * from the user-agent stylesheet, and the `display: flex` below would beat it —
+ * which would put the question in front of a player who had already answered it
+ * in the URL, and add a row to a layout that is measured to the pixel on a
+ * phone held sideways.
+ */
+.choose {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.choose[hidden] {
+  display: none;
+}
+
+.choose__or,
+.choose__label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.choose input {
+  font: inherit;
+  min-width: 12ch;
+  padding: 0.4rem 0.6rem;
+  color: var(--ink);
+  background: #131c33;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+}
+
 button {
   font: inherit;
   padding: 0.4rem 1rem;
@@ -168,6 +206,17 @@ kbd {
   button {
     padding: 0.15rem 0.6rem;
     font-size: 0.75rem;
+  }
+
+  /* The choice takes a row of a screen that has few to spare; it takes a small one. */
+  .choose input {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.75rem;
+  }
+
+  .choose__or,
+  .choose__label {
+    font-size: 0.7rem;
   }
 
   /*
