@@ -1,0 +1,23 @@
+# The table server: a Worker whose only job is to hold Durable Objects, one per
+# table id. The site itself stays on Cloudflare Pages — a Durable Object cannot
+# live there, which is why this is a second deploy rather than an edit to the
+# first.
+name = "pong-table"
+main = "table.ts"
+compatibility_date = "2026-08-01"
+
+[vars]
+# A minute, as the plan settled. Overridden to something a test can wait for by
+# `wrangler dev --var`, never in production.
+IDLE_TIMEOUT_MS = "60000"
+
+[[durable_objects.bindings]]
+name = "TABLE"
+class_name = "Table"
+
+[[migrations]]
+tag = "v1"
+# SQLite-backed, which is the storage backend new Durable Objects use — the
+# table keeps nothing in storage, but the class still has to be declared with a
+# backend to be created at all.
+new_sqlite_classes = ["Table"]

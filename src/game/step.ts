@@ -5,6 +5,13 @@
  * reports what happened this tick as a list of events, and the caller decides
  * what to do about them — play a sound, update the score in the DOM. That is
  * what lets the collision rules be tested directly.
+ *
+ * Both paddles take an input, but only the left one always has a human behind
+ * it. The right-hand input is `Input | null`, and `null` means the computer
+ * plays that side at its own speed — which is why the computer is not simply
+ * handed an `Input`: a held key moves a paddle at `PADDLE_SPEED`, two and a half
+ * times what `CPU_SPEED` allows, and the computer driven that way would be a
+ * different opponent from the one single player already has.
  */
 
 import { cpuTargetY, cpuVelocity } from './cpu';
@@ -68,6 +75,23 @@ function paddleCentre(y: number): number {
 }
 
 /**
+ * Where a paddle a human is driving ends up after `dt` seconds.
+ *
+ * Exported because the networked client draws its own paddle from its own input
+ * before the server has seen it, and the two agree only if they move the paddle
+ * by the same rule. One rule, two callers.
+ */
+export function movePaddle(y: number, input: Input, dt: number): number {
+  if (input.targetY === null) {
+    const direction = (input.down ? 1 : 0) - (input.up ? 1 : 0);
+    return clampPaddle(y + direction * PADDLE_SPEED * dt);
+  }
+  // A named position is taken as given: the paddle goes there this tick rather
+  // than travelling towards it at PADDLE_SPEED.
+  return clampPaddle(input.targetY - PADDLE_HEIGHT / 2);
+}
+
+/**
  * A bounce off a paddle leaves at an angle set by where it struck: dead centre
  * comes straight back, the edges send it away steeply. Speed is unchanged.
  */
@@ -91,7 +115,13 @@ function overlapsPaddle(ball: Ball, paddleY: number): boolean {
   );
 }
 
-export function step(state: GameState, dtMs: number, input: Input): StepResult {
+export function step(
+  state: GameState,
+  dtMs: number,
+  left: Input,
+  /** The right-hand paddle's input, or `null` to leave that side to the computer. */
+  right: Input | null = null,
+): StepResult {
   const events: GameEvent[] = [];
   if (state.phase === 'idle' || state.phase === 'game-over') {
     return { state, events };
@@ -101,16 +131,13 @@ export function step(state: GameState, dtMs: number, input: Input): StepResult {
   const next: GameState = { ...state, ball: { ...state.ball }, score: { ...state.score } };
 
   // Both paddles move, whether the ball is in play or waiting to be served.
-  if (input.targetY === null) {
-    const playerDirection = (input.down ? 1 : 0) - (input.up ? 1 : 0);
-    next.playerY = clampPaddle(next.playerY + playerDirection * PADDLE_SPEED * dt);
+  next.playerY = movePaddle(next.playerY, left, dt);
+  if (right === null) {
+    const cpuDelta = cpuVelocity(paddleCentre(next.cpuY), cpuTargetY(next.ball)) * dt;
+    next.cpuY = clampPaddle(next.cpuY + cpuDelta);
   } else {
-    // A named position is taken as given: the paddle goes there this tick
-    // rather than travelling towards it at PADDLE_SPEED.
-    next.playerY = clampPaddle(input.targetY - PADDLE_HEIGHT / 2);
+    next.cpuY = movePaddle(next.cpuY, right, dt);
   }
-  const cpuDelta = cpuVelocity(paddleCentre(next.cpuY), cpuTargetY(next.ball)) * dt;
-  next.cpuY = clampPaddle(next.cpuY + cpuDelta);
 
   if (next.phase === 'serving') {
     next.serveTimerMs -= dtMs;

@@ -12,9 +12,13 @@
       <h1>Pong</h1>
 
       <p class="scoreboard" aria-live="polite">
-        <span class="scoreboard__side">Player <span id="player-score">0</span></span>
+        <span class="scoreboard__side"
+          ><span id="player-label">Player</span> <span id="player-score">0</span></span
+        >
         <span class="scoreboard__dash">–</span>
-        <span class="scoreboard__side"><span id="cpu-score">0</span> Computer</span>
+        <span class="scoreboard__side"
+          ><span id="cpu-score">0</span> <span id="cpu-label">Computer</span></span
+        >
       </p>
 
       <canvas
@@ -26,6 +30,30 @@
 
       <p id="status" class="status" role="status">Press any key to start</p>
 
+      <!--
+        The choice, hidden until the page knows there is one to make. A URL that
+        already names a game — ?seed= for the one-player game, ?table= for a
+        table — is a choice already made, and unhiding this first would flash a
+        question at a player who never had one.
+      -->
+      <form id="choose" class="choose" hidden>
+        <button id="play-single" type="button">Single player</button>
+        <span class="choose__or">or</span>
+        <label class="choose__label" for="table-id">Table id</label>
+        <input
+          id="table-id"
+          name="table-id"
+          type="text"
+          required
+          maxlength="64"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="Johnny-13224"
+        />
+        <button id="play-table" type="submit">Join table</button>
+      </form>
+
       <p class="controls">
         <button id="mute" type="button" aria-pressed="false">Sound on</button>
       </p>
@@ -33,7 +61,8 @@
       <p class="hint">
         Drag the court, move the mouse, or use <kbd>↑</kbd> / <kbd>↓</kbd> or
         <kbd>W</kbd> / <kbd>S</kbd>. Tap or click the court, or press any key,
-        to start. <kbd>M</kbd> toggles sound. First to 11 wins.
+        to start. <kbd>M</kbd> toggles sound. First to 11 wins. Two people who
+        agree the same table id play each other at it.
       </p>
     </main>
 
