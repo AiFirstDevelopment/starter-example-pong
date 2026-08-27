@@ -1,17 +1,24 @@
 {
   "slug": "multi-player",
   "branch": "feature/multi-player",
-  "stage": "building",
-  "updated": "2026-08-27T01:32:10Z",
+  "stage": "built",
+  "updated": "2026-08-27T02:14:45Z",
   "plan": {
     "acs": 9,
     "steps": 10,
     "open": 0,
     "requirementsHash": "943b558acff8e9c4555402e8d479f0090f4e1ad958f9d37b51a99417ed09306e"
   },
+  "build": {
+    "stepsDone": 10,
+    "deviations": 9,
+    "suite": "green",
+    "head": "c329ab1"
+  },
   "log": [
     "2026-08-27T01:19:34Z 1-plan planned 9 ACs, 10 steps, 0 open questions; branched from main at f8ffd2b. Server-authoritative Durable Object; user chose one run over splitting the simulation refactor out.",
     "2026-08-27T01:32:10Z plan approved by user via 1-plan",
-    "2026-08-27T01:32:10Z pipeline launched, diffRange f8ffd2b...HEAD (forked from main)"
+    "2026-08-27T01:32:10Z pipeline launched, diffRange f8ffd2b...HEAD (forked from main)",
+    "2026-08-27T02:14:45Z 2-build built 10/10, 9 deviations incl. 2 plan defects (AC1-vs-AC2, Node 20->22), suite green: 74 unit + 55 e2e on macOS and in the CI Linux image"
   ]
 }
