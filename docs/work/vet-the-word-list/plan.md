@@ -122,7 +122,10 @@ belongs nowhere near a browser.
   ids would need millions of draws to distinguish a working filter from a broken
   one, and would still be probabilistic.
 - **AC2** is the criterion that stops the filter rotting. Run it by emptying the
-  blocklist and watching AC1's test fail, and record that it was run.
+  blocklist and watching **AC2's and AC3's** tests fail, and record that it was
+  run. Not AC1's: AC1 compares the filtered corpora against the blocklist, so
+  both sides of it go empty together and it passes vacuously — which is the same
+  trap AC3 exists to cover, named wrongly here when the plan was written.
 - **AC3** guards the direction of the change: a filter that silently matched
   nothing would satisfy AC1 trivially.
 - **AC4** derives the space from the filtered lengths, so shrinking a corpus past
