@@ -1,8 +1,8 @@
 {
   "slug": "start-and-share",
   "branch": "feature/start-and-share",
-  "stage": "reviewed",
-  "updated": "2026-08-29T16:10:58Z",
+  "stage": "adjudicated",
+  "updated": "2026-08-29T16:30:28Z",
   "plan": {
     "acs": 11,
     "steps": 11,
@@ -15,6 +15,30 @@
     "suite": "green",
     "head": "e1d0c32"
   },
+  "review": {
+    "round": 1,
+    "lenses": [
+      "behavior",
+      "correctness",
+      "spec-fidelity",
+      "security",
+      "simplicity",
+      "test-quality"
+    ],
+    "missing": [],
+    "findings": 11,
+    "blockers": 0,
+    "head": "e249e8c"
+  },
+  "verdict": {
+    "outcome": "ready with follow-ups",
+    "suite": "green",
+    "accepted": 9,
+    "rejected": 0,
+    "unmet": 0,
+    "escalations": 2,
+    "head": "1a91e5e"
+  },
   "log": [
     "2026-08-29T14:38:56Z 1-plan planned 11 ACs, 11 steps, 0 open questions; branched from main at 5012fe0. Supersedes mobile-touch-controls AC6 (a drag must start the game on touch) and multi-player's no-id-generation Non-goal.",
     "2026-08-29T14:39:59Z plan approved by user via 1-plan",
@@ -23,6 +47,7 @@
     "2026-08-29T15:03:14Z user approved the amended plan and the relaunch (stop, amend AC6, relaunch)",
     "2026-08-29T15:03:14Z pipeline relaunched from S5; S1-S4 already done and in the working tree",
     "2026-08-29T15:51:45Z 2-build built 11/11, 5 deviations, suite green (129 unit, 76 behavioural, on macOS and again in the CI Linux image). Restarted at S5 onto a tree already carrying the superseded random-character sharing work; the generator was rewritten to the amended AC6 and everything downstream re-verified. The Linux run caught a 1px iPhone SE overflow regression from the longer hint text, fixed by shortening the hint.",
-    "2026-08-29T16:10:58Z panel complete, adjudication started"
+    "2026-08-29T16:10:58Z panel complete, adjudication started",
+    "2026-08-29T16:29:41Z 4-quorum adjudicated ready with follow-ups: 9 accepted, 0 rejected, 2 escalated (unvetted word corpus; stale chooser line, whose fix AC11 forbids here). Suite green, 130 unit and 77 behavioural, twice. AC11 was unmet at review head e249e8c - the AC6 rewrite dropped a shipped assertion - and is met now. One change beyond the plan: the create path writes the table id to the address bar."
   ]
 }
