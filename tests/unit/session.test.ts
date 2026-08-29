@@ -69,9 +69,18 @@ describe('tableLink', () => {
     // A `?seed=` left over from a one-player game would name a replay at a
     // table that has no generator to seed, and anything else somebody arrived
     // with is not the other player's business.
-    expect(
-      tableLink({ origin: 'https://pong.example', pathname: '/' }, 'abc'),
-    ).not.toContain('seed');
+    //
+    // Given a location that really carries a query string, because that is what
+    // the caller passes: `main.ts` hands this `window.location`, which has a
+    // `search`. Handed a bare `{ origin, pathname }` this case asserted nothing
+    // — there was no query for the function to carry over, so the only way it
+    // could have failed was a table id with 'seed' in it.
+    const arrivedWith = new URL('https://pong.example/?seed=7&utm_source=email');
+    const link = tableLink(arrivedWith, 'abc');
+    expect(link).toBe('https://pong.example/?table=abc');
+    expect(link).not.toContain('seed');
+    expect(link).not.toContain('utm_source');
+
     expect(tableLink({ origin: 'http://localhost:4173', pathname: '/' }, 'abc')).toBe(
       'http://localhost:4173/?table=abc',
     );

@@ -2,7 +2,7 @@
 
 - **Slug:** start-and-share
 - **Branch:** feature/start-and-share
-- **Status:** built
+- **Status:** adjudicated
 
 ## Intent
 

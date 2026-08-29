@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 import { courtBox, paddleAt } from './support/pong';
 import {
@@ -6,6 +6,7 @@ import {
   TEST_IDLE_TIMEOUT_MS,
   closeTables,
   enterTable,
+  expectAgreedScore,
   expectPlaying,
   forge,
   freshTableId,
@@ -36,27 +37,6 @@ const RALLY_MS = 2500;
 // A test that fails leaves its browser contexts behind, and the next repeat in
 // the same worker inherits them. Closed here so one failure stays one failure.
 test.afterEach(closeTables);
-
-/**
- * Wait until both browsers are showing the same score, and it is not 0-0.
- *
- * Two pages cannot be read at the same instant — the reads are milliseconds
- * apart and a broadcast can land between them — so "the same score" is asserted
- * as something the pair is found in, not as two readings subtracted. Points are
- * the best part of two seconds apart, so an agreeing sample is not hard to find.
- */
-async function expectAgreedScore(first: Page, second: Page): Promise<void> {
-  await expect
-    .poll(
-      async () => {
-        const mine = await scoreOf(first);
-        const theirs = await scoreOf(second);
-        return mine === theirs && mine !== '0-0';
-      },
-      { timeout: CONVERGE_MS },
-    )
-    .toBe(true);
-}
 
 /**
  * Every score one page showed, against every score the other did.

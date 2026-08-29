@@ -420,6 +420,33 @@ export async function scoreOf(page: Page): Promise<string> {
     .textContent()}`;
 }
 
+/**
+ * Wait until both browsers are showing the same score, and it is not 0-0.
+ *
+ * Two pages cannot be read at the same instant — the reads are milliseconds
+ * apart and a broadcast can land between them — so "the same score" is asserted
+ * as something the pair is found in, not as two readings subtracted. Points are
+ * the best part of two seconds apart, so an agreeing sample is not hard to find.
+ *
+ * Here rather than in a spec because both `table.spec.ts` and `invite.spec.ts`
+ * need it, and what "the two browsers agree" means has to be one definition:
+ * the `mine !== '0-0'` guard is written against the initial markup, and a copy
+ * of it that nobody updated when that markup changed would go quietly vacuous
+ * and pass against a table that had never broadcast a point.
+ */
+export async function expectAgreedScore(first: Page, second: Page): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const mine = await scoreOf(first);
+        const theirs = await scoreOf(second);
+        return mine === theirs && mine !== '0-0';
+      },
+      { timeout: CONVERGE_MS },
+    )
+    .toBe(true);
+}
+
 /** Wait until both browsers are on their paddles with each other. */
 export async function expectPlaying(page: Page): Promise<void> {
   await expect

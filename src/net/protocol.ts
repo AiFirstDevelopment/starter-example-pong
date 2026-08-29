@@ -96,8 +96,16 @@ export const MAX_TABLE_ID_LENGTH = 64;
  * because `NumberDictionary.generate` returns a dictionary holding exactly one
  * number, chosen when it was called. Hoisting it would put the same three
  * digits on the end of every id a page ever mints.
+ *
+ * `max` is exclusive, which is not what its name suggests and not what the
+ * package documents: `NumberDictionary.generate` computes
+ * `Math.floor(Math.random() * (max - min)) + min`. Written as 999 — the largest
+ * three-digit number, the obvious thing to write — it would draw 100 to 998 and
+ * no id would ever end in `-999`, leaving 899 endings against the 900 this is
+ * counted on to give. Exported so the test that pins the size of the space
+ * measures the range the generator actually draws from rather than a literal.
  */
-const ID_DIGITS = { min: 100, max: 999 };
+export const ID_DIGITS = { min: 100, max: 1000 };
 
 /**
  * A fresh table id, for a player with nobody to agree one with.
@@ -110,8 +118,13 @@ const ID_DIGITS = { min: 100, max: 999 };
  * `k7m-q2x-9fp`.
  *
  * The words are `unique-names-generator`'s corpus rather than a list improvised
- * here. Any generator that combines words can land somewhere unfortunate, and
- * choosing which words go in is exactly the part a hand-rolled list gets wrong.
+ * here, which is a decision about where the list comes from and not a claim
+ * that it has been vetted for this use. It has not: the corpus is a general
+ * purpose one, `adjectives` holds `naked`, `dirty`, `nasty` and `sexual` among
+ * others and `animals` holds `beaver`, `booby`, `cow` and `pig`, so a pairing a
+ * player would rather not send to a friend is reachable — rarely, and reachable.
+ * Filtering it is a product decision nobody has taken, so it is recorded here
+ * rather than quietly assumed away.
  *
  * It satisfies `normaliseTableId` by construction: lowercase letters, hyphens
  * and digits, so there is nothing to trim, and at most 33 characters against a

@@ -435,6 +435,23 @@ createButton.addEventListener('click', () => {
   const tableId = generateTableId();
   session = atTable(tableId);
   startTable(tableId);
+  // The address bar names the table, which is what it already does for the
+  // player who arrived on a link — this puts a minted id on the same footing
+  // rather than adding anything new. Without it the id lives only in this
+  // page's DOM: a reload drops the player back at the chooser with it gone,
+  // and a phone reloads a backgrounded tab as a matter of course, which is
+  // exactly what sending somebody the link asks the player to leave and do.
+  // The obvious recovery then mints a *different* table, and the friend who
+  // was sent the first link waits at it for as long as they are willing to.
+  //
+  // `replaceState`, not `pushState`: this is the same page answering a
+  // question, not somewhere Back should return from. Nothing re-reads the
+  // search string after load, so rewriting it now cannot affect this page.
+  //
+  // Last, after the table has been joined, so that the one thing that can
+  // refuse it — a document whose origin is not one `replaceState` will accept —
+  // costs the address bar rather than the button.
+  window.history.replaceState(null, '', tableLink(window.location, tableId));
 });
 
 chooser.addEventListener('submit', (event) => {

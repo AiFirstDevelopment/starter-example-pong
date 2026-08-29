@@ -279,6 +279,19 @@ test('AC6: a tap starts the game and unlocks the sound, and so now does a drag',
   // game moved the paddle with it rather than being spent on the start.
   expect(missedBy(await paddleAt(page, 'player'), box, draggedTo)).toBeLessThanOrEqual(1);
 
+  // A finger landing somewhere else does not drag the paddle to it. The
+  // superseded version of this test asserted the same thing, of the tap that
+  // used to start the game, and the rewrite moved the assertion above the tap
+  // rather than keeping it — so nothing was left watching `onPointerDown`, and
+  // `onPointerDown` is the handler this work item turned from bookkeeping into
+  // the thing that starts the game. Adding `targetY = courtY(...)` to it is a
+  // natural next edit, and it has to fail here: 0.3 of the court away from
+  // where the finger left the paddle is 144 px of court, and thirty frames is
+  // more than twice the time the paddle needs to cover it.
+  await page.touchscreen.tap(x, downCourt(box, 0.3));
+  await runFrames(page, 30);
+  expect(missedBy(await paddleAt(page, 'player'), box, draggedTo)).toBeLessThanOrEqual(1);
+
   // Played on, and heard: a sound only reaches the destination if the gesture
   // the audio context was started from was one the browser accepts. The drag is
   // now such a gesture, which is the other half of what AC6 denied it.

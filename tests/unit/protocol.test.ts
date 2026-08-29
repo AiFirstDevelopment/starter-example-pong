@@ -6,6 +6,7 @@ import {
   normaliseTableId,
   parseClientMessage,
   parseServerMessage,
+  ID_DIGITS,
   MAX_TABLE_ID_LENGTH,
 } from '../../src/net/protocol';
 
@@ -156,8 +157,33 @@ describe('generateTableId', () => {
     // thousand ids and demanding no duplicate — that is a test whose own odds
     // decide whether it passes, and the space is the thing the criterion is
     // about. 1202 adjectives, 355 animals and the 900 three-digit numbers.
-    const space = new Set(adjectives).size * new Set(animals).size * 900;
+    //
+    // The digit factor comes from `ID_DIGITS` rather than from a literal 900,
+    // because the words alone are 426,710 — 234 times *under* the criterion —
+    // so the whole margin over the bar is the one factor the implementation
+    // owns. Narrowing the range to `{ min: 100, max: 200 }` leaves every other
+    // assertion here green, and has to fail this one.
+    const endings = ID_DIGITS.max - ID_DIGITS.min;
+    const space = new Set(adjectives).size * new Set(animals).size * endings;
     expect(space).toBeGreaterThanOrEqual(100_000_000);
+  });
+
+  it('AC6: the digits really span the range the space is counted from', () => {
+    // `ID_DIGITS` is only worth multiplying by if the generator draws across
+    // all of it, and its `max` is exclusive — written as the 999 it reads as,
+    // no id would ever end in `-999` and the space would be 899 endings rather
+    // than the 900 the doc comment, the README and the test above all claim.
+    const digits = Array.from({ length: 4000 }, () => Number(generateTableId().split('-')[2]));
+    for (const digit of digits) {
+      expect(digit).toBeGreaterThanOrEqual(ID_DIGITS.min);
+      expect(digit).toBeLessThan(ID_DIGITS.max);
+    }
+    // Both ends are reachable, which is what an off-by-one at either would
+    // cost. Four thousand draws miss a given ten-wide band of 900 endings with
+    // probability (89/90)^4000, about 5e-20, so this is decided by the range
+    // rather than by the draw.
+    expect(Math.min(...digits)).toBeLessThan(ID_DIGITS.min + 10);
+    expect(Math.max(...digits)).toBeGreaterThan(ID_DIGITS.max - 11);
   });
 
   it('AC6: two generated in a row differ', () => {

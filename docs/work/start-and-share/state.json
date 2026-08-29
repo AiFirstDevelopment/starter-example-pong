@@ -1,8 +1,8 @@
 {
   "slug": "start-and-share",
   "branch": "feature/start-and-share",
-  "stage": "built",
-  "updated": "2026-08-29T15:51:45Z",
+  "stage": "reviewed",
+  "updated": "2026-08-29T16:10:58Z",
   "plan": {
     "acs": 11,
     "steps": 11,
@@ -22,6 +22,7 @@
     "2026-08-29T15:02:56Z AC6 amended by the user before any lens read it: the generated id becomes sayable words via unique-names-generator rather than random characters, and the collision space rises from 10M to 384M. requirementsHash re-recorded a0cca3b0 -> fba068b9. Build stopped at S1-S4 done; S5 restarts.",
     "2026-08-29T15:03:14Z user approved the amended plan and the relaunch (stop, amend AC6, relaunch)",
     "2026-08-29T15:03:14Z pipeline relaunched from S5; S1-S4 already done and in the working tree",
-    "2026-08-29T15:51:45Z 2-build built 11/11, 5 deviations, suite green (129 unit, 76 behavioural, on macOS and again in the CI Linux image). Restarted at S5 onto a tree already carrying the superseded random-character sharing work; the generator was rewritten to the amended AC6 and everything downstream re-verified. The Linux run caught a 1px iPhone SE overflow regression from the longer hint text, fixed by shortening the hint."
+    "2026-08-29T15:51:45Z 2-build built 11/11, 5 deviations, suite green (129 unit, 76 behavioural, on macOS and again in the CI Linux image). Restarted at S5 onto a tree already carrying the superseded random-character sharing work; the generator was rewritten to the amended AC6 and everything downstream re-verified. The Linux run caught a 1px iPhone SE overflow regression from the longer hint text, fixed by shortening the hint.",
+    "2026-08-29T16:10:58Z panel complete, adjudication started"
   ]
 }

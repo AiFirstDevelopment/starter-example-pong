@@ -5,13 +5,11 @@ import {
   CONVERGE_MS,
   closeTables,
   enterAt,
+  expectAgreedScore,
   labels,
   prepareTablePage,
-  scoreOf,
   statusOf,
   parkPaddleAtTop,
-  watchScore,
-  watchStatus,
   type TablePage,
 } from './support/table';
 
@@ -32,9 +30,7 @@ test.afterEach(closeTables);
 
 /** Make a table in this browser, and hand back the link the page offers. */
 async function createTable(seat: TablePage): Promise<string> {
-  await seat.page.goto('/');
-  await watchScore(seat.page);
-  await watchStatus(seat.page);
+  await enterAt(seat, '/');
 
   await expect(seat.page.locator('#create-table')).toBeVisible();
   await seat.page.locator('#create-table').click();
@@ -55,20 +51,6 @@ async function tableNamedInStatus(page: Page): Promise<string> {
     throw new Error(`the status line does not name a table: ${line}`);
   }
   return named[1];
-}
-
-/** Wait until both pages show the same score, and it is not the markup's 0-0. */
-async function expectAgreedScore(first: Page, second: Page): Promise<void> {
-  await expect
-    .poll(
-      async () => {
-        const mine = await scoreOf(first);
-        const theirs = await scoreOf(second);
-        return mine === theirs && mine !== '0-0';
-      },
-      { timeout: CONVERGE_MS },
-    )
-    .toBe(true);
 }
 
 test('AC5: a table can be started without typing anything, and the page shows the way in', async ({
@@ -101,6 +83,45 @@ test('AC6: the id the page mints is a sayable one', async ({ browser }) => {
 
   const named = await tableNamedInStatus(host.page);
   expect(named).toMatch(/^[a-z]+-[a-z]+-\d{3}$/);
+
+  await host.close();
+});
+
+test('a reload comes back to the table that was created, not to the chooser', async ({
+  browser,
+}) => {
+  /*
+   * Not an acceptance criterion — added in adjudication, because the behaviour
+   * lens found the loss and nothing in the plan was watching for it.
+   *
+   * A minted id that lives only in the page's DOM is gone the moment the page
+   * reloads, and the feature asks the player to leave the browser to send the
+   * link, which is when a phone reloads a backgrounded tab. The player comes
+   * back to the chooser, presses the same button, and is now waiting at a
+   * different table from the friend they sent the first link to — with neither
+   * page saying anything is wrong.
+   *
+   * The fix is that the address bar names the table, the way it already does
+   * for the player who arrived on a link. Both halves are asserted: the URL is
+   * the one on screen, and a real reload lands back at the same table.
+   */
+  const host = await prepareTablePage(browser);
+  const link = await createTable(host);
+  const named = await tableNamedInStatus(host.page);
+
+  // The address bar is the link, so there is something for a reload to use.
+  expect(host.page.url()).toBe(link);
+
+  await host.page.reload();
+
+  // Back at the same table rather than back at the question. The seat is
+  // retaken by the new socket — the old one went with the old page — so this is
+  // the arrival path a link already uses, not a resumption of anything.
+  await expect
+    .poll(() => statusOf(host.page), { timeout: CONVERGE_MS })
+    .toBe(`You have the left paddle. Waiting for another player at table ${named}.`);
+  await expect(host.page.locator('#choose')).toBeHidden();
+  await expect(host.page.locator('#invite-url')).toHaveText(link);
 
   await host.close();
 });
