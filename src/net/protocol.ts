@@ -14,13 +14,9 @@
  * repaired, it is dropped.
  */
 
-import {
-  NumberDictionary,
-  adjectives,
-  animals,
-  uniqueNamesGenerator,
-} from 'unique-names-generator';
+import { NumberDictionary, uniqueNamesGenerator } from 'unique-names-generator';
 
+import { TABLE_ID_ADJECTIVES, TABLE_ID_ANIMALS } from './words';
 import type { GameState } from '../game/state';
 import type { GameEvent, Input } from '../game/step';
 
@@ -85,8 +81,8 @@ export const MAX_TABLE_ID_LENGTH = 64;
 /**
  * The three digits a generated id ends with.
  *
- * An adjective and an animal alone is 427 thousand ids; the digits take it to
- * 384 million. They cost nothing to say and they move the point at which two
+ * An adjective and an animal alone is 380 thousand ids; the digits take it to
+ * 342 million. They cost nothing to say and they move the point at which two
  * tables alive at the same moment are likely to collide from a few hundred to
  * twenty-three thousand. That matters more than it did when every id was one a
  * player chose: a collision between two ids people picked is theirs to shrug
@@ -117,14 +113,12 @@ export const ID_DIGITS = { min: 100, max: 1000 };
  * characters would have made that field vestigial, since nobody invents
  * `k7m-q2x-9fp`.
  *
- * The words are `unique-names-generator`'s corpus rather than a list improvised
- * here, which is a decision about where the list comes from and not a claim
- * that it has been vetted for this use. It has not: the corpus is a general
- * purpose one, `adjectives` holds `naked`, `dirty`, `nasty` and `sexual` among
- * others and `animals` holds `beaver`, `booby`, `cow` and `pig`, so a pairing a
- * player would rather not send to a friend is reachable — rarely, and reachable.
- * Filtering it is a product decision nobody has taken, so it is recorded here
- * rather than quietly assumed away.
+ * The words come from `unique-names-generator`, but the corpus does not: the
+ * package's is general purpose, and it reaches pairings a player would rather
+ * not send to a friend. `./words` is where the list is decided — the package
+ * supplies the words, this game curates them — and it is deliberately generous,
+ * because an id is minted in order to be sent and the headroom to be strict
+ * with it is free.
  *
  * It satisfies `normaliseTableId` by construction: lowercase letters, hyphens
  * and digits, so there is nothing to trim, and at most 33 characters against a
@@ -132,7 +126,7 @@ export const ID_DIGITS = { min: 100, max: 1000 };
  */
 export function generateTableId(): string {
   return uniqueNamesGenerator({
-    dictionaries: [adjectives, animals, NumberDictionary.generate(ID_DIGITS)],
+    dictionaries: [TABLE_ID_ADJECTIVES, TABLE_ID_ANIMALS, NumberDictionary.generate(ID_DIGITS)],
     length: 3,
     separator: '-',
   });

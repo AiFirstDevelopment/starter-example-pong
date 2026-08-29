@@ -67,9 +67,18 @@ are not interrupted.
 There is no lobby and no matchmaking, and minting an id does not reserve it: the
 first two sockets take the table, generated id or typed one. An id is a
 rendezvous string, and two pairs who pick the same one collide — which is why a
-generated one is drawn from 1202 adjectives, 355 animals and 900 numbers, 384
+generated one is drawn from 1167 adjectives, 326 animals and 900 numbers, 342
 million in all, and why an id you agree out loud should be something long enough
 that nobody else will land on it.
+
+The words come from `unique-names-generator`; the corpus does not. The package's
+list is general purpose, and a general-purpose list reaches `naked-beaver-417`
+about once in five to twenty thousand creations — on an id whose whole job is to
+be sent to somebody. So the list is curated here, in `src/net/words.ts`, and
+curated generously: words that are innocuous alone but ugly beside an animal
+come out too, because the pair is what gets sent. That is where the 1167 and the
+326 come from, and the headroom over the space this needs is what makes being
+strict free.
 
 When the game is won, either player can start another with the gesture that
 starts a single-player game — a key, a click, or a finger on the court. Both

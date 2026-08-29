@@ -1,4 +1,3 @@
-import { adjectives, animals } from 'unique-names-generator';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -9,6 +8,7 @@ import {
   ID_DIGITS,
   MAX_TABLE_ID_LENGTH,
 } from '../../src/net/protocol';
+import { TABLE_ID_ADJECTIVES, TABLE_ID_ANIMALS } from '../../src/net/words';
 
 describe('parseClientMessage', () => {
   it('reads an input a browser sent', () => {
@@ -141,8 +141,15 @@ describe('generateTableId', () => {
     // The parts, not merely the pattern: two words and a number matching
     // `\w+-\w+-\d{3}` would also be satisfied by a generator that had quietly
     // stopped using the corpus this one was chosen for.
-    const adjective = new Set(adjectives);
-    const animal = new Set(animals);
+    //
+    // Against the curated corpora rather than the package's, which is also what
+    // holds the generator to them: a version that went back to importing
+    // `adjectives` and `animals` straight from the package would satisfy every
+    // other assertion in this file, and the blocklist would be a file nothing
+    // reads. A hundred ids miss the 64 blocked words with probability 0.892^100,
+    // about one in ninety-six thousand, so this is decided by the wiring.
+    const adjective = new Set(TABLE_ID_ADJECTIVES);
+    const animal = new Set(TABLE_ID_ANIMALS);
     for (const id of minted) {
       const parts = id.split('-');
       expect(parts).toHaveLength(3);
@@ -156,15 +163,18 @@ describe('generateTableId', () => {
     // From the dictionary lengths, which is exact, rather than by drawing a
     // thousand ids and demanding no duplicate — that is a test whose own odds
     // decide whether it passes, and the space is the thing the criterion is
-    // about. 1202 adjectives, 355 animals and the 900 three-digit numbers.
+    // about. 1167 adjectives, 326 animals and the 900 three-digit numbers,
+    // measured after the blocklist rather than before it: the corpora the
+    // generator draws from are the curated ones, and a space counted from the
+    // package's would be counting ids this game cannot mint.
     //
     // The digit factor comes from `ID_DIGITS` rather than from a literal 900,
-    // because the words alone are 426,710 — 234 times *under* the criterion —
+    // because the words alone are 380,442 — 262 times *under* the criterion —
     // so the whole margin over the bar is the one factor the implementation
     // owns. Narrowing the range to `{ min: 100, max: 200 }` leaves every other
     // assertion here green, and has to fail this one.
     const endings = ID_DIGITS.max - ID_DIGITS.min;
-    const space = new Set(adjectives).size * new Set(animals).size * endings;
+    const space = new Set(TABLE_ID_ADJECTIVES).size * new Set(TABLE_ID_ANIMALS).size * endings;
     expect(space).toBeGreaterThanOrEqual(100_000_000);
   });
 
