@@ -63,7 +63,11 @@ being right once the page can hand you a link.
       page says copying is unavailable rather than silently doing nothing.
 - [ ] AC11: Everything else already shipped still holds. The full existing suite
       passes with no test weakened, and the only assertions that change are the
-      ones AC1 and AC2 supersede.
+      ones AC1 and AC2 supersede, together with the three that pin the chooser's
+      instruction line — `tests/unit/status.test.ts`, and `tests/e2e/choose.spec.ts`
+      in two places. That line names the ways into a game, AC5 adds one, and a
+      criterion written to stop tests being loosened should not also stop the
+      copy being made true.
 
 ## Non-goals
 

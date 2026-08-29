@@ -65,7 +65,7 @@ describe('sessionStatusText at a table', () => {
 
   it('asks the player to choose before either game has been picked', () => {
     expect(sessionStatusText(createState(1), choosing(), KEYBOARD)).toBe(
-      'Choose single player, or join a table by its id',
+      'Choose single player, create a table, or join one by its id',
     );
   });
 

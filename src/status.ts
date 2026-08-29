@@ -85,7 +85,7 @@ export function sessionStatusText(
   touch: boolean,
 ): string {
   if (session.mode === 'choosing') {
-    return 'Choose single player, or join a table by its id';
+    return 'Choose single player, create a table, or join one by its id';
   }
   if (session.mode === 'table') {
     return tableStatusText(state, session);
