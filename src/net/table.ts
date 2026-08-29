@@ -22,6 +22,20 @@ import {
 import type { GameState } from '../game/state';
 import type { GameEvent, Input } from '../game/step';
 
+/**
+ * How near the interval a tick has to land to count as the beat being due.
+ *
+ * A timer set for an interval does not fire exactly on it, and a tick that
+ * arrives a hair early has — by its own clock — not quite waited a whole
+ * interval since the last thing this socket said. Measured against the whole
+ * interval, those ticks are thrown away and the next one is a full interval
+ * later: in a real browser that is every other tick, so a beat named once a
+ * second goes out every two, and the slack the table's timeout is counting on is
+ * halved. Half an interval is the tolerance that fixes it — a tick that is
+ * nearly due beats, and a tick that follows something just said still does not.
+ */
+const BEAT_DUE_MS = HEARTBEAT_INTERVAL_MS / 2;
+
 export interface TableEvents {
   /** Which paddle is this player's. */
   onWelcome: (slot: Slot) => void;
@@ -125,7 +139,7 @@ export function joinTable(tableId: string, events: TableEvents): TableSocket {
       return;
     }
     const now = performance.now();
-    if (now - lastSpokeMs < HEARTBEAT_INTERVAL_MS) {
+    if (now - lastSpokeMs < BEAT_DUE_MS) {
       return;
     }
     speak({ kind: 'alive' }, now);

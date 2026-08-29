@@ -12,9 +12,19 @@ import {
   parkPaddleAtCentre,
   scoreOf,
   snapshotsSeen,
+  socketCloses,
   statusOf,
   statusesSeen,
 } from './support/table';
+
+/**
+ * What the table says as it hangs up on a socket that stopped answering.
+ *
+ * Written out rather than imported: from out here the close code is the wire
+ * contract, not one of the page's own constants. It is `SILENT_CLOSE_CODE` in
+ * `src/net/protocol.ts`, with the reason `worker/table.ts` closes with.
+ */
+const HUNG_UP_FOR_SILENCE = '4408:no sign of life';
 
 /**
  * A seat is held by a socket, and a socket is only worth a seat while somebody
@@ -52,6 +62,14 @@ test('AC1: a socket that stops answering loses its seat, and the player still th
   await expect
     .poll(() => statusOf(staying.page), { timeout: TEST_LIVENESS_TIMEOUT_MS * 2 })
     .toBe(`Your opponent left. Waiting for another player at table ${table}.`);
+
+  // And the socket was hung up on, not merely forgotten. A seat given back
+  // while the connection is left open gives back nothing that costs anything:
+  // the table is resident and billed for as long as somebody holds a socket to
+  // it, and the browser behind this one has gone.
+  await expect
+    .poll(() => socketCloses(leaving.page), { timeout: CONVERGE_MS })
+    .toContain(HUNG_UP_FOR_SILENCE);
 
   // And the seat came back: the next arrival takes the paddle the silent socket
   // was holding, rather than being turned away from a table nobody is at.

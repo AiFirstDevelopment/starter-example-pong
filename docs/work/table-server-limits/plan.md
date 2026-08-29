@@ -2,7 +2,7 @@
 
 - **Slug:** table-server-limits
 - **Branch:** fix/table-server-limits
-- **Status:** built
+- **Status:** adjudicated
 
 ## Intent
 
