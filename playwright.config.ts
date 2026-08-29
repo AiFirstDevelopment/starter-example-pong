@@ -1,7 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
 import { TOUCH_DEVICE } from './tests/e2e/support/pong';
-import { TABLE_PORT, TABLE_URL, TEST_IDLE_TIMEOUT_MS } from './tests/e2e/support/table';
+import {
+  TABLE_PORT,
+  TABLE_URL,
+  TEST_IDLE_TIMEOUT_MS,
+  TEST_LIVENESS_TIMEOUT_MS,
+} from './tests/e2e/support/table';
 
 const PORT = 4173;
 
@@ -55,6 +60,9 @@ export default defineConfig({
         `--port ${TABLE_PORT} --local`,
         // Production tables idle out after a minute; a suite cannot wait one.
         `--var IDLE_TIMEOUT_MS:${TEST_IDLE_TIMEOUT_MS}`,
+        // And a silent socket keeps its seat for ninety seconds in production,
+        // which is three minutes of suite to watch one go and one stay.
+        `--var LIVENESS_TIMEOUT_MS:${TEST_LIVENESS_TIMEOUT_MS}`,
       ].join(' '),
       // Something to ask that is not a game socket, so readiness does not depend
       // on taking one of the two paddles at a table.

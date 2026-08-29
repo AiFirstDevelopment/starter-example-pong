@@ -1,0 +1,68 @@
+{
+  "slug": "table-server-limits",
+  "branch": "fix/table-server-limits",
+  "stage": "published",
+  "updated": "2026-08-29T13:20:00Z",
+  "plan": {
+    "acs": 7,
+    "steps": 9,
+    "open": 0,
+    "requirementsHash": "2bb9fb0f00a099aa3f4cd009a52bf2b8e6bb7c92393c04b9070f97284ca48d97"
+  },
+  "build": {
+    "stepsDone": 9,
+    "deviations": 4,
+    "suite": "green",
+    "head": "a638bad"
+  },
+  "review": {
+    "round": 1,
+    "lenses": [
+      "behavior",
+      "correctness",
+      "spec-fidelity",
+      "security",
+      "simplicity",
+      "test-quality"
+    ],
+    "missing": [],
+    "findings": 6,
+    "blockers": 0,
+    "head": "7d65328"
+  },
+  "verdict": {
+    "outcome": "ready with follow-ups",
+    "suite": "green",
+    "accepted": 5,
+    "rejected": 1,
+    "unmet": 0,
+    "escalations": 0,
+    "head": "b6bf8f9"
+  },
+  "log": [
+    "2026-08-27T09:34:40Z 1-plan planned 7 ACs, 9 steps, 0 open questions; branched from main at 844d8bc. Carries harden-and-rematch E2 (as an inactivity timeout, user's choice over hibernation), judge-diff F1 (IPv6 case), and the entry-pinning the last verdict could not close.",
+    "2026-08-27T09:39:01Z plan approved by user via 1-plan",
+    "2026-08-27T09:39:01Z pipeline launched, diffRange 844d8bc...HEAD (forked from main)",
+    "2026-08-27T10:04:08Z 2-build built 9/9, 4 deviations (no PLAN DEFECTs), suite green: 102 unit across two vitest projects + 65 behavioural, on macOS and in node:22-bookworm",
+    "2026-08-27T10:20:47Z Review round stopped by user before any lens wrote; build stage complete and committed at a638bad. Resume with /quorum:3-review then /quorum:4-quorum on this branch, or /quorum:pipeline with skipBuild. The workflow run wf_18b8a7a2-f33 is not resumable across sessions.",
+    "2026-08-29T12:14:22Z review round relaunched with skipBuild over the committed build at a638bad",
+    "2026-08-29T12:42:19Z panel complete, adjudication started",
+    "2026-08-29T13:04:35Z 4-quorum adjudicated ready with follow-ups, 5 accepted, 1 rejected, 0 escalations, 7/7 ACs met; suite green at 106 unit + 65 behavioural on macOS and node:22-bookworm",
+    "2026-08-29T13:20:00Z 5-publish opened PR #7 ready for review; guard clean (0 violations), gate unknown (branch protection needs admin access to read); judge-diff recheck 1 finding, 0 blockers"
+  ],
+  "recheck": {
+    "lens": "judge-diff",
+    "findings": 1,
+    "blockers": 0,
+    "range": "7d65328..b6bf8f9"
+  },
+  "guard": {
+    "clean": true,
+    "violations": 0,
+    "gate": "unknown"
+  },
+  "pr": {
+    "url": "https://github.com/AiFirstDevelopment/starter-example-pong/pull/7",
+    "draft": false
+  }
+}

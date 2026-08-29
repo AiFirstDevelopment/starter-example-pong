@@ -10,6 +10,12 @@ compatibility_date = "2026-08-01"
 # A minute, as the plan settled. Overridden to something a test can wait for by
 # `wrangler dev --var`, never in production.
 IDLE_TIMEOUT_MS = "60000"
+# Ninety seconds of silence and a seat is taken back. A browser beats once a
+# second when it has nothing else to say, so only a socket nobody is behind ever
+# reaches this — and a socket nobody is behind holds this object resident and
+# billed for as long as the connection survives. Overridden by `--var` for the
+# tests, the same way the idle timeout is.
+LIVENESS_TIMEOUT_MS = "90000"
 # The pages a browser may open a table from: the site itself, any preview Pages
 # gives a deployment of it, and the two development servers this repository
 # starts. A `*` stands for exactly one label, so `<hash>.pong-3su.pages.dev` is

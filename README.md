@@ -145,13 +145,30 @@ Pages gives every push without admitting the rest of `pages.dev`. **Deploying
 the page anywhere else means adding that origin here**, or the Worker will
 refuse every player on it.
 
+Neither check does anything about a table that has already been opened, and one
+holds a Durable Object resident for as long as somebody holds a socket to it. So
+a seat is given back after `LIVENESS_TIMEOUT_MS` — ninety seconds — of hearing
+nothing at all from the browser behind it. A player who has simply stopped moving
+is not silent: their browser beats once a second when it has nothing else to say,
+which is what separates a parked paddle from a killed tab, a closed laptop or a
+cut network. It does not bound somebody who means it — a script that answers the
+heartbeat keeps its table — and making a held table cheap is what WebSocket
+hibernation would be for.
+
 ## Tests
 
 ```bash
 npm test           # unit tests, then the behavioural suite
-npm run test:unit  # Vitest: the collision maths, the computer, the generator
+npm run test:unit  # Vitest, two projects: `unit` and `worker`
 npm run test:e2e   # Playwright: the game in a real browser
 ```
+
+Vitest runs two projects, because the two halves are compiled against different
+types: `unit` is `tests/unit/`, the browser's code under the root `tsconfig.json`,
+and `worker` is `worker/tests/`, which drives the Durable Object and its entry
+against fake bindings under `worker/tsconfig.json` — the only place the Workers
+types exist. That second project is where the door checks can be shown to happen
+*before* a table is addressed, which no test outside the Worker can see.
 
 The Playwright suite builds the app and drives the built bundle through
 `vite preview`, pressing real keys. Two boundaries are substituted: the clock
@@ -167,8 +184,9 @@ contexts against it, and they cannot freeze the clock: a server and two browsers
 have no clock to share. So they run on real time and poll for what the pages
 converge to rather than asserting on a particular frame. The table server they
 run against is started with a three-second idle timeout instead of the minute a
-real one gets, so a test can watch a table expire without costing the suite a
-minute.
+real one gets, and a five-second liveness timeout instead of the ninety seconds,
+so a test can watch a table expire and a silent socket lose its seat without
+costing the suite minutes.
 
 The first run needs a browser binary:
 
@@ -199,6 +217,7 @@ worker/
   slots.ts       which paddle an arrival gets, or none
   origins.ts     which pages a browser may open a table from
   limit.ts       how often one address may ask for one
+  tests/         the Worker's own unit tests, run as the `worker` project
   wrangler.toml  the table server's configuration
 ```
 
