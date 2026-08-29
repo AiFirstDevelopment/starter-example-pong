@@ -29,7 +29,7 @@ test('AC1: the page offers both games and starts neither on its own', async ({ p
   await expect(page.locator('#table-id')).toBeVisible();
   await expect(page.locator('#play-table')).toBeVisible();
   await expect(page.locator('#status')).toHaveText(
-    'Choose single player, or join a table by its id',
+    'Choose single player, create a table, or join one by its id',
   );
 
   // Neither game is entered by default. A key press, a click on the court —
@@ -87,7 +87,7 @@ test('AC1: an empty table id is not a table, and does not start anything', async
 
   await expect(page.locator('#choose')).toBeVisible();
   await expect(page.locator('#status')).toHaveText(
-    'Choose single player, or join a table by its id',
+    'Choose single player, create a table, or join one by its id',
   );
 });
 

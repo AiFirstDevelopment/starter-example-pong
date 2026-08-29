@@ -11,13 +11,26 @@ import type { GameState } from './game/state';
 import type { Slot } from './net/protocol';
 import type { Session } from './session';
 
-export function statusText(state: GameState): string {
+/**
+ * What the player is asked to do, which is not the same on every device.
+ *
+ * A phone has no keys, and a page that opens by asking for one is asking for
+ * the single thing the player cannot do (AC3). What they can do is touch the
+ * court, which is what starts the game there. `touch` is the only thing that
+ * differs, so it is the only thing passed in: the caller knows what kind of
+ * device this is and this module stays a pure function of what it is told.
+ */
+function startGesture(touch: boolean): string {
+  return touch ? 'Touch the court' : 'Press any key';
+}
+
+export function statusText(state: GameState, touch: boolean): string {
   if (state.phase === 'idle') {
-    return 'Press any key to start';
+    return `${startGesture(touch)} to start`;
   }
   if (state.phase === 'game-over') {
     const winner = state.winner === 'player' ? 'You win!' : 'Computer wins!';
-    return `${winner} Press any key to play again`;
+    return `${winner} ${startGesture(touch)} to play again`;
   }
   return '';
 }
@@ -66,12 +79,16 @@ export function tableStatusText(state: GameState, session: Session): string {
 }
 
 /** The line under the court, whichever game is being played — or none yet. */
-export function sessionStatusText(state: GameState, session: Session): string {
+export function sessionStatusText(
+  state: GameState,
+  session: Session,
+  touch: boolean,
+): string {
   if (session.mode === 'choosing') {
-    return 'Choose single player, or join a table by its id';
+    return 'Choose single player, create a table, or join one by its id';
   }
   if (session.mode === 'table') {
     return tableStatusText(state, session);
   }
-  return statusText(state);
+  return statusText(state, touch);
 }

@@ -11,6 +11,7 @@ import {
   recordFrames,
   recordSound,
   runFrames,
+  score,
   sounds,
   touchDrag,
   type Box,
@@ -244,9 +245,22 @@ test('AC5: a gesture that starts off the court is the page’s, not the paddle�
   expect(await computedStyle(page, 'body', 'touch-action')).toBe('auto');
 });
 
-test('AC6: a tap starts the game and unlocks the sound; a drag does neither', async ({
+test('AC6: a tap starts the game and unlocks the sound, and so now does a drag', async ({
   page,
 }) => {
+  /*
+   * The second half of this used to assert the opposite. `mobile-touch-controls`
+   * AC6 required that "dragging a finger without tapping does not start the
+   * game" and makes no sound, mirroring a mouse — where moving does not start a
+   * game and clicking does.
+   *
+   * The `start-and-share` work item supersedes that half deliberately, and its
+   * AC1 is the criterion this now asserts: on a phone the drag *is* the first
+   * thing a player does, so the old rule threw away exactly the gesture the
+   * player made first — the reported bug. The tap half is untouched and still
+   * checked below, on a page that has not been dragged, because a tap starting
+   * the game is not implied by a drag doing so.
+   */
   await page.goto('/?seed=1');
   const box = await courtBox(page);
   const x = acrossCourt(box);
@@ -257,23 +271,47 @@ test('AC6: a tap starts the game and unlocks the sound; a drag does neither', as
   await touchDrag(page, { x, y: downCourt(box, 0.3) }, { x, y: draggedTo });
   await runFrames(page, 30);
 
-  await expect(status).toHaveText('Press any key to start');
+  // Started by the drag, where it used to take a separate tap afterwards.
+  await expect(status).toHaveText('');
+  expect(await courtImage(page)).not.toBe(still);
+
+  // And the paddle is where the finger left it, so the drag that started the
+  // game moved the paddle with it rather than being spent on the start.
+  expect(missedBy(await paddleAt(page, 'player'), box, draggedTo)).toBeLessThanOrEqual(1);
+
+  // A finger landing somewhere else does not drag the paddle to it. The
+  // superseded version of this test asserted the same thing, of the tap that
+  // used to start the game, and the rewrite moved the assertion above the tap
+  // rather than keeping it — so nothing was left watching `onPointerDown`, and
+  // `onPointerDown` is the handler this work item turned from bookkeeping into
+  // the thing that starts the game. Adding `targetY = courtY(...)` to it is a
+  // natural next edit, and it has to fail here: 0.3 of the court away from
+  // where the finger left the paddle is 144 px of court, and thirty frames is
+  // more than twice the time the paddle needs to cover it.
+  await page.touchscreen.tap(x, downCourt(box, 0.3));
+  await runFrames(page, 30);
+  expect(missedBy(await paddleAt(page, 'player'), box, draggedTo)).toBeLessThanOrEqual(1);
+
+  // Played on, and heard: a sound only reaches the destination if the gesture
+  // the audio context was started from was one the browser accepts. The drag is
+  // now such a gesture, which is the other half of what AC6 denied it.
+  await runFrames(page, 120);
+  const afterDrag = await sounds(page);
+  expect(afterDrag.length).toBeGreaterThan(0);
+  expect(afterDrag[0].connectedToDestination).toBe(true);
+
+  // The tap, on a page nothing has been dragged on, is exactly what it was.
+  await page.goto('/?seed=1');
+  await expect(status).toHaveText('Touch the court to start');
   expect(await sounds(page)).toEqual([]);
-  expect(await courtImage(page)).toBe(still);
 
   await page.touchscreen.tap(x, downCourt(box, 0.3));
   await expect(status).toHaveText('');
 
-  // Played on, and heard: a sound only reaches the destination if the tap was
-  // the gesture the audio context was started from.
   await runFrames(page, 120);
-  const played = await sounds(page);
-  expect(played.length).toBeGreaterThan(0);
-  expect(played[0].connectedToDestination).toBe(true);
-
-  // And the paddle is where the finger left it rather than where the tap
-  // landed, so the game carries on from where the player put it.
-  expect(missedBy(await paddleAt(page, 'player'), box, draggedTo)).toBeLessThanOrEqual(1);
+  const afterTap = await sounds(page);
+  expect(afterTap.length).toBeGreaterThan(0);
+  expect(afterTap[0].connectedToDestination).toBe(true);
 });
 
 test('AC7: touch and keys share the paddle, and the more recent of them wins', async ({
@@ -367,10 +405,97 @@ test('AC8: the same seed driven the same way, touch included, plays out identica
 });
 
 /*
- * The `landscape-phone-layout` work item, whose own criteria are numbered from
- * one again. Its tests are titled `landscape ACn` so they cannot be read as
- * the criteria above, which belong to `mobile-touch-controls`.
+ * The `start-and-share` work item, whose own criteria are numbered from one
+ * again. Its tests are titled `start ACn` so they cannot be read as the
+ * criteria above, which belong to `mobile-touch-controls` — and its AC1
+ * deliberately supersedes that work item's AC6, which is why the test above
+ * carries the note about it.
  */
+
+test('start AC1: a finger on the idle court starts the game and moves the paddle in the same drag', async ({
+  page,
+}) => {
+  await page.goto('/?seed=1');
+  const box = await courtBox(page);
+  const x = acrossCourt(box);
+  const status = page.locator('#status');
+
+  const idle = await paddleAt(page, 'player');
+
+  // One gesture, and it is never lifted: down, and then dragged.
+  const hand = await finger(page);
+  await hand.down({ x, y: downCourt(box, 0.5) });
+
+  // Started on the touch itself. The reported bug is that this line still read
+  // as an idle court here, and nothing the finger did next was played.
+  await expect(status).toHaveText('');
+
+  const clientY = downCourt(box, 0.15);
+  await hand.moveTo({ x, y: clientY });
+  await runFrames(page, 3);
+
+  // And the paddle followed the finger through that same drag, rather than
+  // waiting at 200 for a second gesture to arrive.
+  const moved = await paddleAt(page, 'player');
+  expect(missedBy(moved, box, clientY)).toBeLessThanOrEqual(1);
+  expect(moved).not.toEqual(idle);
+
+  // Sound is available from it, as it is from a tap: the drag is a gesture the
+  // browser will start an audio context from, and the game used it as one.
+  await runFrames(page, 120);
+  const played = await sounds(page);
+  expect(played.length).toBeGreaterThan(0);
+  expect(played[0].connectedToDestination).toBe(true);
+
+  await hand.up();
+});
+
+test('start AC2: one touch after a game is won starts the next and moves the paddle', async ({
+  page,
+}) => {
+  await page.goto('/?seed=1');
+  const box = await courtBox(page);
+  const x = acrossCourt(box);
+  const status = page.locator('#status');
+
+  // Started, and then left alone: at this seed the computer takes it to eleven.
+  await page.touchscreen.tap(x, downCourt(box, 0.5));
+  for (let chunk = 0; chunk < 60; chunk += 1) {
+    if (((await status.textContent()) ?? '').includes('wins')) {
+      break;
+    }
+    await runFrames(page, 60);
+  }
+  await expect(status).toHaveText('Computer wins! Touch the court to play again');
+  expect(await score(page)).toEqual({ player: '0', cpu: '11' });
+
+  // The same single gesture as AC1, in the place the bug bit for the second
+  // time: one finger down starts the next game.
+  const hand = await finger(page);
+  await hand.down({ x, y: downCourt(box, 0.5) });
+  await expect(status).toHaveText('');
+  expect(await score(page)).toEqual({ player: '0', cpu: '0' });
+
+  // And that same drag, still not lifted, moves the paddle.
+  const clientY = downCourt(box, 0.85);
+  await hand.moveTo({ x, y: clientY });
+  await runFrames(page, 3);
+  expect(missedBy(await paddleAt(page, 'player'), box, clientY)).toBeLessThanOrEqual(1);
+
+  await hand.up();
+});
+
+test('start AC3: the idle line names the court, not a key the phone has not got', async ({
+  page,
+}) => {
+  await page.goto('/?seed=1');
+  const status = page.locator('#status');
+
+  await expect(status).toHaveText('Touch the court to start');
+  // The half that matters: whatever else it says, it does not ask a device with
+  // no keyboard for a key. `mouse.spec.ts` asserts the other device.
+  expect(await status.textContent()).not.toContain('key');
+});
 
 /** The shape the court is drawn at, whatever size the page gives it. */
 const COURT_ASPECT = 800 / COURT_HEIGHT;

@@ -371,13 +371,25 @@ export async function prepareTablePage(
   return seat;
 }
 
-/** Take a prepared context into a table. */
-export async function enterTable(seat: TablePage, tableId: string): Promise<void> {
-  await seat.page.goto(`/?table=${encodeURIComponent(tableId)}`);
+/**
+ * Take a prepared context to a URL, and start watching what the page shows.
+ *
+ * Split out from `enterTable` because a link the page itself handed over is a
+ * whole URL rather than an id — that is the point of it — and the second browser
+ * in the invite tests has to open exactly the string the first one displayed,
+ * not one the test rebuilt from its parts.
+ */
+export async function enterAt(seat: TablePage, url: string): Promise<void> {
+  await seat.page.goto(url);
   // After the page exists, because the observers watch elements on it. The
   // score starts at 0-0 either way, so nothing is missed by waiting.
   await watchScore(seat.page);
   await watchStatus(seat.page);
+}
+
+/** Take a prepared context into a table. */
+export async function enterTable(seat: TablePage, tableId: string): Promise<void> {
+  await enterAt(seat, `/?table=${encodeURIComponent(tableId)}`);
 }
 
 /** Open a browser at a table, on its own context, the way a second person would. */
@@ -406,6 +418,33 @@ export async function scoreOf(page: Page): Promise<string> {
   return `${await page.locator('#player-score').textContent()}-${await page
     .locator('#cpu-score')
     .textContent()}`;
+}
+
+/**
+ * Wait until both browsers are showing the same score, and it is not 0-0.
+ *
+ * Two pages cannot be read at the same instant — the reads are milliseconds
+ * apart and a broadcast can land between them — so "the same score" is asserted
+ * as something the pair is found in, not as two readings subtracted. Points are
+ * the best part of two seconds apart, so an agreeing sample is not hard to find.
+ *
+ * Here rather than in a spec because both `table.spec.ts` and `invite.spec.ts`
+ * need it, and what "the two browsers agree" means has to be one definition:
+ * the `mine !== '0-0'` guard is written against the initial markup, and a copy
+ * of it that nobody updated when that markup changed would go quietly vacuous
+ * and pass against a table that had never broadcast a point.
+ */
+export async function expectAgreedScore(first: Page, second: Page): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const mine = await scoreOf(first);
+        const theirs = await scoreOf(second);
+        return mine === theirs && mine !== '0-0';
+      },
+      { timeout: CONVERGE_MS },
+    )
+    .toBe(true);
 }
 
 /** Wait until both browsers are on their paddles with each other. */

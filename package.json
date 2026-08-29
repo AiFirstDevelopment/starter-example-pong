@@ -26,5 +26,8 @@
     "vite": "^6.4.3",
     "vitest": "^3.2.7",
     "wrangler": "^4.126.0"
+  },
+  "dependencies": {
+    "unique-names-generator": "^4.7.1"
   }
 }

@@ -14,9 +14,10 @@
 import { createAudio, soundFor } from './audio';
 import { createControls } from './input';
 import { joinTable, type TableSocket } from './net/table';
-import { FIXED_DT_MS, SNAPSHOT_INTERVAL_MS } from './net/protocol';
+import { FIXED_DT_MS, SNAPSHOT_INTERVAL_MS, generateTableId } from './net/protocol';
 import { interpolate, render } from './render';
-import { readSession, singlePlayer, type Session } from './session';
+import { atTable, readSession, singlePlayer, tableLink, type Session } from './session';
+import { browserTargets, shareLink, shareNote } from './share';
 import { sessionStatusText } from './status';
 import { readSeed } from './game/rng';
 import { createState, startGame, type GameState } from './game/state';
@@ -24,6 +25,19 @@ import { movePaddle, step, type GameEvent } from './game/step';
 
 /** A backgrounded tab returns with a huge gap; do not simulate all of it. */
 const MAX_FRAME_MS = 250;
+
+/**
+ * Whether this is a device a finger is used on.
+ *
+ * Only the line under the court asks: a phone has no key to press, so it is
+ * told to touch the court instead (AC3). `maxTouchPoints` rather than
+ * `'ontouchstart' in window`, which is false on a Chrome emulating a phone and
+ * so would tell exactly the device this exists for to press a key.
+ *
+ * Read once, at load. A device does not grow a touchscreen mid-game, and the
+ * status line is written thirty times a second at a table.
+ */
+const TOUCH = navigator.maxTouchPoints > 0;
 
 function element<T extends HTMLElement>(id: string): T {
   const found = document.getElementById(id);
@@ -52,7 +66,12 @@ const status = element('status');
 const muteButton = element<HTMLButtonElement>('mute');
 const chooser = element<HTMLFormElement>('choose');
 const singleButton = element<HTMLButtonElement>('play-single');
+const createButton = element<HTMLButtonElement>('create-table');
 const tableIdInput = element<HTMLInputElement>('table-id');
+const invite = element('invite');
+const inviteUrl = element('invite-url');
+const inviteShare = element<HTMLButtonElement>('invite-share');
+const inviteNote = element('invite-note');
 
 const audio = createAudio();
 let state: GameState = createState(readSeed(window.location.search));
@@ -95,9 +114,47 @@ function showScore(): void {
  * string would have a screen reader read it out thirty times a second.
  */
 function showStatus(): void {
-  const line = sessionStatusText(state, session);
+  const line = sessionStatusText(state, session, TOUCH);
   if (status.textContent !== line) {
     status.textContent = line;
+  }
+  // The link belongs to the same moment as the line above it — it appears while
+  // the line says somebody is being waited for, and goes when it stops saying
+  // so — so it is written here rather than from the eight other places the line
+  // is, where one of them would sooner or later be forgotten.
+  showInvite();
+}
+
+/** Whether this page is at a table with nobody on the other paddle. */
+function waitingForAnother(): boolean {
+  return (
+    session.mode === 'table' &&
+    (session.connection === 'waiting' || session.connection === 'opponent-left')
+  );
+}
+
+/**
+ * The way in to this table, while there is a seat at it (AC7).
+ *
+ * Guarded like `showStatus` and for the same reason: a table calls this thirty
+ * times a second, and rewriting the same URL back would have a screen reader
+ * announce the note beside it that often. Only while waiting — a table two
+ * people are already playing at has nothing to offer a third, and a page that
+ * was refused one has no link to give away.
+ */
+function showInvite(): void {
+  const url =
+    waitingForAnother() && session.tableId !== null
+      ? tableLink(window.location, session.tableId)
+      : '';
+  if (inviteUrl.textContent !== url) {
+    inviteUrl.textContent = url;
+  }
+  if (invite.hidden === (url !== '')) {
+    invite.hidden = url === '';
+    // Whatever the last attempt to share said, it was about a link that is no
+    // longer the one on screen.
+    inviteNote.textContent = '';
   }
 }
 
@@ -362,6 +419,41 @@ singleButton.addEventListener('click', () => {
   startSinglePlayer();
 });
 
+/**
+ * A table nobody had to agree on first (AC5).
+ *
+ * The id is minted here and joined immediately, and minting it claims nothing:
+ * the first two sockets take the table exactly as they do for an id typed into
+ * the field beside this button. What the player gets that they did not have
+ * before is a URL to send, which appears the moment the table says they are
+ * waiting.
+ */
+createButton.addEventListener('click', () => {
+  // The click that chooses is the gesture a browser wants before it will make a
+  // sound, exactly as it is for the button beside this one.
+  audio.unlock();
+  const tableId = generateTableId();
+  session = atTable(tableId);
+  startTable(tableId);
+  // The address bar names the table, which is what it already does for the
+  // player who arrived on a link — this puts a minted id on the same footing
+  // rather than adding anything new. Without it the id lives only in this
+  // page's DOM: a reload drops the player back at the chooser with it gone,
+  // and a phone reloads a backgrounded tab as a matter of course, which is
+  // exactly what sending somebody the link asks the player to leave and do.
+  // The obvious recovery then mints a *different* table, and the friend who
+  // was sent the first link waits at it for as long as they are willing to.
+  //
+  // `replaceState`, not `pushState`: this is the same page answering a
+  // question, not somewhere Back should return from. Nothing re-reads the
+  // search string after load, so rewriting it now cannot affect this page.
+  //
+  // Last, after the table has been joined, so that the one thing that can
+  // refuse it — a document whose origin is not one `replaceState` will accept —
+  // costs the address bar rather than the button.
+  window.history.replaceState(null, '', tableLink(window.location, tableId));
+});
+
 chooser.addEventListener('submit', (event) => {
   event.preventDefault();
   const chosen = readSession(`?table=${encodeURIComponent(tableIdInput.value)}`);
@@ -371,6 +463,30 @@ chooser.addEventListener('submit', (event) => {
   audio.unlock();
   session = chosen;
   startTable(chosen.tableId);
+});
+
+/* --------------------------------------------------------- sending the link */
+
+/**
+ * What this browser can do with a link, read once.
+ *
+ * The button says which of them it will do, because a control labelled "Copy
+ * link" that opens a share sheet has told the player something untrue about
+ * what is about to happen to their link.
+ */
+const shareTargets = browserTargets(navigator);
+if (shareTargets.share !== undefined) {
+  inviteShare.textContent = 'Share link';
+}
+
+inviteShare.addEventListener('click', () => {
+  const url = inviteUrl.textContent ?? '';
+  if (url === '') {
+    return;
+  }
+  void shareLink(url, shareTargets).then((outcome) => {
+    inviteNote.textContent = shareNote(outcome);
+  });
 });
 
 showScore();

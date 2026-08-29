@@ -14,6 +14,13 @@
  * repaired, it is dropped.
  */
 
+import {
+  NumberDictionary,
+  adjectives,
+  animals,
+  uniqueNamesGenerator,
+} from 'unique-names-generator';
+
 import type { GameState } from '../game/state';
 import type { GameEvent, Input } from '../game/step';
 
@@ -74,6 +81,62 @@ export const SILENT_CLOSE_CODE = 4408;
 
 /** A table id long enough for anything a person would agree out loud. */
 export const MAX_TABLE_ID_LENGTH = 64;
+
+/**
+ * The three digits a generated id ends with.
+ *
+ * An adjective and an animal alone is 427 thousand ids; the digits take it to
+ * 384 million. They cost nothing to say and they move the point at which two
+ * tables alive at the same moment are likely to collide from a few hundred to
+ * twenty-three thousand. That matters more than it did when every id was one a
+ * player chose: a collision between two ids people picked is theirs to shrug
+ * at, and a collision between two this page minted is ours.
+ *
+ * The dictionary itself is drawn inside `generateTableId` rather than here,
+ * because `NumberDictionary.generate` returns a dictionary holding exactly one
+ * number, chosen when it was called. Hoisting it would put the same three
+ * digits on the end of every id a page ever mints.
+ *
+ * `max` is exclusive, which is not what its name suggests and not what the
+ * package documents: `NumberDictionary.generate` computes
+ * `Math.floor(Math.random() * (max - min)) + min`. Written as 999 — the largest
+ * three-digit number, the obvious thing to write — it would draw 100 to 998 and
+ * no id would ever end in `-999`, leaving 899 endings against the 900 this is
+ * counted on to give. Exported so the test that pins the size of the space
+ * measures the range the generator actually draws from rather than a literal.
+ */
+export const ID_DIGITS = { min: 100, max: 1000 };
+
+/**
+ * A fresh table id, for a player with nobody to agree one with.
+ *
+ * Words rather than random characters, because an id has two jobs and only one
+ * of them is being sent. `mute-harrier-553` is also something a player can read
+ * down a phone line into the field beside the button that minted it, which is
+ * what keeps the two ways in to a table complementary — an id of random
+ * characters would have made that field vestigial, since nobody invents
+ * `k7m-q2x-9fp`.
+ *
+ * The words are `unique-names-generator`'s corpus rather than a list improvised
+ * here, which is a decision about where the list comes from and not a claim
+ * that it has been vetted for this use. It has not: the corpus is a general
+ * purpose one, `adjectives` holds `naked`, `dirty`, `nasty` and `sexual` among
+ * others and `animals` holds `beaver`, `booby`, `cow` and `pig`, so a pairing a
+ * player would rather not send to a friend is reachable — rarely, and reachable.
+ * Filtering it is a product decision nobody has taken, so it is recorded here
+ * rather than quietly assumed away.
+ *
+ * It satisfies `normaliseTableId` by construction: lowercase letters, hyphens
+ * and digits, so there is nothing to trim, and at most 33 characters against a
+ * cap of 64.
+ */
+export function generateTableId(): string {
+  return uniqueNamesGenerator({
+    dictionaries: [adjectives, animals, NumberDictionary.generate(ID_DIGITS)],
+    length: 3,
+    separator: '-',
+  });
+}
 
 export type ServerMessage =
   /** You are in, and this is your paddle. */

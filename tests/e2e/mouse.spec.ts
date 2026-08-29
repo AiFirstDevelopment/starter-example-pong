@@ -260,6 +260,47 @@ test('AC7: the same seed driven the same way, mouse included, plays out identica
   expect(other).not.toEqual(first);
 });
 
+/*
+ * The `start-and-share` work item, whose own criteria are numbered from one
+ * again. Its tests are titled `start ACn` so they cannot be read as the
+ * criteria above. That work item makes a finger start the game the moment it
+ * lands on the court; these are what says the mouse did not come with it.
+ */
+
+test('start AC4: pressing the button on an idle court is not what starts the game — completing the click is', async ({
+  page,
+}) => {
+  await page.goto('/?seed=1');
+  const box = await courtBox(page);
+  const status = page.locator('#status');
+  const still = await courtImage(page);
+
+  // AC3's other device: where there is a keyboard the line still names it.
+  await expect(status).toHaveText('Press any key to start');
+
+  // Moving does not start it, which is what it has always done.
+  await page.mouse.move(box.left + 100, downCourt(box, 0.25));
+  await page.mouse.move(box.left + 120, downCourt(box, 0.6));
+  await runFrames(page, 30);
+  await expect(status).toHaveText('Press any key to start');
+
+  // Nor does putting the button down and dragging with it held. This is the
+  // assertion that keeps the mouse out of the touch path: a pointer with a
+  // button says "start" by completing a click, and a `pointerdown` that started
+  // the game for every pointer type would have started it here.
+  await page.mouse.down();
+  await page.mouse.move(box.left + 140, downCourt(box, 0.35));
+  await page.mouse.move(box.left + 160, downCourt(box, 0.8));
+  await runFrames(page, 30);
+  await expect(status).toHaveText('Press any key to start');
+  expect(await sounds(page)).toEqual([]);
+  expect(await courtImage(page)).toBe(still);
+
+  // And letting go completes the click, which does start it.
+  await page.mouse.up();
+  await expect(status).toHaveText('');
+});
+
 test('AC4: a key held down while the mouse moves does not snatch the paddle back', async ({
   page,
 }) => {
