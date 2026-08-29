@@ -1,0 +1,20 @@
+{
+  "slug": "start-and-share",
+  "branch": "feature/start-and-share",
+  "stage": "building",
+  "updated": "2026-08-29T15:03:14Z",
+  "plan": {
+    "acs": 11,
+    "steps": 11,
+    "open": 0,
+    "requirementsHash": "fba068b9fb54e59ab300f189546e9d120989ae4829225945d275466a98349b44"
+  },
+  "log": [
+    "2026-08-29T14:38:56Z 1-plan planned 11 ACs, 11 steps, 0 open questions; branched from main at 5012fe0. Supersedes mobile-touch-controls AC6 (a drag must start the game on touch) and multi-player's no-id-generation Non-goal.",
+    "2026-08-29T14:39:59Z plan approved by user via 1-plan",
+    "2026-08-29T14:39:59Z pipeline launched, diffRange 5012fe0...HEAD (forked from main)",
+    "2026-08-29T15:02:56Z AC6 amended by the user before any lens read it: the generated id becomes sayable words via unique-names-generator rather than random characters, and the collision space rises from 10M to 384M. requirementsHash re-recorded a0cca3b0 -> fba068b9. Build stopped at S1-S4 done; S5 restarts.",
+    "2026-08-29T15:03:14Z user approved the amended plan and the relaunch (stop, amend AC6, relaunch)",
+    "2026-08-29T15:03:14Z pipeline relaunched from S5; S1-S4 already done and in the working tree"
+  ]
+}

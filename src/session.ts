@@ -54,6 +54,23 @@ export function atTable(tableId: string): Session {
 }
 
 /**
+ * The URL that joins this table: the inverse of `readSession` below.
+ *
+ * Built from the origin and path alone, so whatever else was in the address bar
+ * — a `?seed=` from a one-player game, a tracking parameter somebody arrived
+ * with — is not sent on to the other player. It is the whole URL rather than
+ * just the id because the whole URL is the point: what the page hands over has
+ * to be something the person receiving it can open (AC7), not a string they
+ * have to be told what to do with.
+ */
+export function tableLink(
+  location: { origin: string; pathname: string },
+  tableId: string,
+): string {
+  return `${location.origin}${location.pathname}?table=${encodeURIComponent(tableId)}`;
+}
+
+/**
  * The mode this URL already names, if it names one.
  *
  * `?table=<id>` goes straight to that table, which is what makes a table id

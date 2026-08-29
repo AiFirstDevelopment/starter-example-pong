@@ -14,6 +14,13 @@
  * repaired, it is dropped.
  */
 
+import {
+  NumberDictionary,
+  adjectives,
+  animals,
+  uniqueNamesGenerator,
+} from 'unique-names-generator';
+
 import type { GameState } from '../game/state';
 import type { GameEvent, Input } from '../game/step';
 
@@ -74,6 +81,49 @@ export const SILENT_CLOSE_CODE = 4408;
 
 /** A table id long enough for anything a person would agree out loud. */
 export const MAX_TABLE_ID_LENGTH = 64;
+
+/**
+ * The three digits a generated id ends with.
+ *
+ * An adjective and an animal alone is 427 thousand ids; the digits take it to
+ * 384 million. They cost nothing to say and they move the point at which two
+ * tables alive at the same moment are likely to collide from a few hundred to
+ * twenty-three thousand. That matters more than it did when every id was one a
+ * player chose: a collision between two ids people picked is theirs to shrug
+ * at, and a collision between two this page minted is ours.
+ *
+ * The dictionary itself is drawn inside `generateTableId` rather than here,
+ * because `NumberDictionary.generate` returns a dictionary holding exactly one
+ * number, chosen when it was called. Hoisting it would put the same three
+ * digits on the end of every id a page ever mints.
+ */
+const ID_DIGITS = { min: 100, max: 999 };
+
+/**
+ * A fresh table id, for a player with nobody to agree one with.
+ *
+ * Words rather than random characters, because an id has two jobs and only one
+ * of them is being sent. `mute-harrier-553` is also something a player can read
+ * down a phone line into the field beside the button that minted it, which is
+ * what keeps the two ways in to a table complementary — an id of random
+ * characters would have made that field vestigial, since nobody invents
+ * `k7m-q2x-9fp`.
+ *
+ * The words are `unique-names-generator`'s corpus rather than a list improvised
+ * here. Any generator that combines words can land somewhere unfortunate, and
+ * choosing which words go in is exactly the part a hand-rolled list gets wrong.
+ *
+ * It satisfies `normaliseTableId` by construction: lowercase letters, hyphens
+ * and digits, so there is nothing to trim, and at most 33 characters against a
+ * cap of 64.
+ */
+export function generateTableId(): string {
+  return uniqueNamesGenerator({
+    dictionaries: [adjectives, animals, NumberDictionary.generate(ID_DIGITS)],
+    length: 3,
+    separator: '-',
+  });
+}
 
 export type ServerMessage =
   /** You are in, and this is your paddle. */

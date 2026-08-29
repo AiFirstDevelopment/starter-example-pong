@@ -99,6 +99,51 @@ canvas {
 }
 
 /*
+ * The link to a table somebody is waiting at.
+ *
+ * `hidden` is spelled out for the same reason `.choose` spells it out below:
+ * the attribute's own `display: none` comes from the user-agent stylesheet and
+ * the `display: flex` here would beat it, putting a link to a table on a page
+ * that is not at one.
+ */
+.invite {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.invite[hidden] {
+  display: none;
+}
+
+/*
+ * The URL itself, which is the one thing on this row that has to survive every
+ * tier failing: where neither the share sheet nor the clipboard works, copying
+ * it by hand is the whole of what is left (AC10). So it is selectable, and it
+ * wraps rather than being cut off on a narrow screen.
+ */
+.invite__url {
+  user-select: all;
+  max-width: 100%;
+  padding: 0.2rem 0.4rem;
+  color: var(--ink);
+  background: #131c33;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+
+.invite button {
+  padding: 0.2rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+/*
  * The choice between the one-player game and a table.
  *
  * `hidden` has to be spelled out: the attribute's own `display: none` comes
@@ -206,6 +251,21 @@ kbd {
   button {
     padding: 0.15rem 0.6rem;
     font-size: 0.75rem;
+  }
+
+  /*
+   * The link to a table takes a row of a screen that has few to spare, so it
+   * takes a small one — and only ever while a player is waiting rather than
+   * playing, which is the moment there is nothing on the court to make room for.
+   */
+  .invite {
+    gap: 0.25rem;
+    font-size: 0.7rem;
+  }
+
+  .invite button {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.7rem;
   }
 
   /* The choice takes a row of a screen that has few to spare; it takes a small one. */

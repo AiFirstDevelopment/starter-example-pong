@@ -371,13 +371,25 @@ export async function prepareTablePage(
   return seat;
 }
 
-/** Take a prepared context into a table. */
-export async function enterTable(seat: TablePage, tableId: string): Promise<void> {
-  await seat.page.goto(`/?table=${encodeURIComponent(tableId)}`);
+/**
+ * Take a prepared context to a URL, and start watching what the page shows.
+ *
+ * Split out from `enterTable` because a link the page itself handed over is a
+ * whole URL rather than an id — that is the point of it — and the second browser
+ * in the invite tests has to open exactly the string the first one displayed,
+ * not one the test rebuilt from its parts.
+ */
+export async function enterAt(seat: TablePage, url: string): Promise<void> {
+  await seat.page.goto(url);
   // After the page exists, because the observers watch elements on it. The
   // score starts at 0-0 either way, so nothing is missed by waiting.
   await watchScore(seat.page);
   await watchStatus(seat.page);
+}
+
+/** Take a prepared context into a table. */
+export async function enterTable(seat: TablePage, tableId: string): Promise<void> {
+  await enterAt(seat, `/?table=${encodeURIComponent(tableId)}`);
 }
 
 /** Open a browser at a table, on its own context, the way a second person would. */

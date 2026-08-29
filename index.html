@@ -31,6 +31,24 @@
       <p id="status" class="status" role="status">Press any key to start</p>
 
       <!--
+        The way in to this table, beside the line above that already names it.
+        Shown only while somebody is waiting at a table, and hidden the rest of
+        the time for the same reason the chooser is: it is a row of a layout
+        that is measured to the pixel on a phone held sideways.
+
+        The URL is text rather than a link on purpose. It is here to be sent to
+        somebody else, and the one person who cannot use it is the player
+        looking at it — following it would drop their socket and give their seat
+        away, which is the opposite of what the control beside it is for.
+      -->
+      <p id="invite" class="invite" hidden>
+        <span class="invite__lead">Send this link to whoever you are playing:</span>
+        <span id="invite-url" class="invite__url"></span>
+        <button id="invite-share" type="button">Copy link</button>
+        <span id="invite-note" class="invite__note" role="status"></span>
+      </p>
+
+      <!--
         The choice, hidden until the page knows there is one to make. A URL that
         already names a game — ?seed= for the one-player game, ?table= for a
         table — is a choice already made, and unhiding this first would flash a
@@ -38,6 +56,8 @@
       -->
       <form id="choose" class="choose" hidden>
         <button id="play-single" type="button">Single player</button>
+        <span class="choose__or">or</span>
+        <button id="create-table" type="button">Create a table</button>
         <span class="choose__or">or</span>
         <label class="choose__label" for="table-id">Table id</label>
         <input
@@ -61,8 +81,9 @@
       <p class="hint">
         Drag the court, move the mouse, or use <kbd>↑</kbd> / <kbd>↓</kbd> or
         <kbd>W</kbd> / <kbd>S</kbd>. Tap or click the court, or press any key,
-        to start. <kbd>M</kbd> toggles sound. First to 11 wins. Two people who
-        agree the same table id play each other at it.
+        to start — on a phone the drag starts it too. <kbd>M</kbd> toggles
+        sound. First to 11 wins. Create a table and send the link, or agree an
+        id and both type it.
       </p>
     </main>
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { readSession } from '../../src/session';
+import { readSession, tableLink } from '../../src/session';
 
 describe('readSession', () => {
   it('chooses nothing on a bare visit, so the page has to ask', () => {
@@ -41,5 +41,39 @@ describe('readSession', () => {
     // that naming one at all is still naming the one-player game.
     expect(readSession('?seed=abc')).toMatchObject({ mode: 'single' });
     expect(readSession('?seed=')).toMatchObject({ mode: 'choosing' });
+  });
+});
+
+describe('tableLink', () => {
+  const here = { origin: 'https://pong.example', pathname: '/' };
+
+  it('AC5: builds a URL that names the table', () => {
+    expect(tableLink(here, 'mute-harrier-553')).toBe(
+      'https://pong.example/?table=mute-harrier-553',
+    );
+  });
+
+  it('AC8: reads back as the same table it was built from', () => {
+    // The round trip is the criterion: whatever this hands over has to be
+    // something `readSession` at the other end takes to the same table.
+    for (const tableId of ['mute-harrier-553', 'Johnny-13224', 'a b', 'one&two', 'ü']) {
+      const link = tableLink(here, tableId);
+      expect(readSession(new URL(link).search)).toMatchObject({
+        mode: 'table',
+        tableId,
+      });
+    }
+  });
+
+  it('sends on the table and nothing else that was in the address bar', () => {
+    // A `?seed=` left over from a one-player game would name a replay at a
+    // table that has no generator to seed, and anything else somebody arrived
+    // with is not the other player's business.
+    expect(
+      tableLink({ origin: 'https://pong.example', pathname: '/' }, 'abc'),
+    ).not.toContain('seed');
+    expect(tableLink({ origin: 'http://localhost:4173', pathname: '/' }, 'abc')).toBe(
+      'http://localhost:4173/?table=abc',
+    );
   });
 });

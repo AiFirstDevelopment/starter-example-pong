@@ -6,16 +6,19 @@ strike, and the ball leaving the court are told apart by ear without looking at
 the screen.
 
 The page opens by asking which game you want. **Single player** gives you the
-left paddle and the computer the right one, exactly as it always has. **A table
-id** is a string two people agree between themselves — `Johnny-13224`, or
-anything else unlikely enough — and the first two people to type it play each
-other at it.
+left paddle and the computer the right one, exactly as it always has. **Create a
+table** makes one on the spot and shows you a link to send to whoever you want
+to play; the first person to open it takes the other paddle. **A table id** is
+the same rendezvous by hand: a string two people agree between themselves —
+`Johnny-13224`, or anything else unlikely enough — and the first two people to
+type it play each other at it.
 
 ## Playing
 
 | Control | Does |
 |---|---|
 | any key except `M`, or a click on the court | serve, and start a new game once one has been won |
+| touching the court | the same, on a phone: the touch starts the game and the drag it turns into moves the paddle |
 | moving the mouse | put your paddle under the pointer, wherever on the page it is |
 | `↑` / `W` | move your paddle up |
 | `↓` / `S` | move your paddle down |
@@ -27,31 +30,51 @@ the bottom. Mouse and keys share the paddle, and the most recent of the two
 wins — move the mouse and the mouse has it, press a movement key and the keys
 do.
 
-First to 11 points wins. Browsers only allow sound to start from a key press or
-a click, so the court is silent until you start — moving the mouse is neither,
-which is why a click starts the game and a mousemove does not.
+First to 11 points wins. Browsers only allow sound to start from a gesture, so
+the court is silent until you start — moving the mouse is not one, which is why
+a click starts the game and a mousemove does not. A finger is different in kind:
+putting it on the court is a gesture, so it starts the game and the sound at
+once, and the drag it becomes moves the paddle without your having to lift and
+touch again. The line under the court says whichever of the two your device
+has.
 
-**Known behaviour:** the paddle does not follow the pointer until the game has
+**Known behaviour:** the paddle does not follow the *pointer* until the game has
 started. The court is deliberately still before the first key or click, so a
 mousemove in that moment sets where the paddle will go without moving it, and
 the paddle arrives under the pointer on the click that starts play. This is a
 decided trade-off against keeping the opening court silent and motionless, not
-an oversight.
+an oversight — and it is a trade-off for a pointer that has a button. A finger
+has none, so on a touch device the court is not still: the touch itself starts
+the game.
 
 ## Playing somebody else
 
-Two people agree a table id and both type it in. The first to arrive gets the
-left paddle, the second the right, and the scoreboard tells each of them which
-is theirs. A third person typing the same id is turned away with a message
-saying the table is in use; the two playing are not interrupted.
+Either **create a table** or agree an id. Creating one mints an id of an
+adjective, an animal and three digits — `mute-harrier-553` — and shows you the
+whole URL that joins it, with a button that hands it to the platform's share
+sheet or, failing that, the clipboard. Where the browser can do neither, the URL
+is still on screen to select and copy by hand, and the page says so rather than
+letting the button do nothing. The words are why it is not random characters:
+the link is for sending, and the id itself is for reading down a phone line into
+the field beside the button that minted it. Agreeing an id instead works exactly
+as it always did: both people type the same string into the field.
 
-There is no lobby, no matchmaking and no check that an id is unused. That is
-deliberate: an id is a rendezvous string, and two pairs who pick the same one
-collide. Pick something long enough that they will not.
+The first to arrive gets the left paddle, the second the right, and the
+scoreboard tells each of them which is theirs. A third person opening the same
+link is turned away with a message saying the table is in use; the two playing
+are not interrupted.
+
+There is no lobby and no matchmaking, and minting an id does not reserve it: the
+first two sockets take the table, generated id or typed one. An id is a
+rendezvous string, and two pairs who pick the same one collide — which is why a
+generated one is drawn from 1202 adjectives, 355 animals and 900 numbers, 384
+million in all, and why an id you agree out loud should be something long enough
+that nobody else will land on it.
 
 When the game is won, either player can start another with the gesture that
-starts a single-player game — a key, a click or a tap. Both browsers go back to
-0-0 and the ball is served again; neither has to leave the table and come back.
+starts a single-player game — a key, a click, or a finger on the court. Both
+browsers go back to 0-0 and the ball is served again; neither has to leave the
+table and come back.
 Only a finished game restarts: the same gesture in the middle of a rally does
 nothing, and the table decides that, not the browser asking.
 
@@ -96,7 +119,9 @@ the seed comes from the clock, so every visit differs. A seed means nothing at a
 table, where the server holds the generator.
 
 `?table=Johnny-13224` goes straight to that table, which is what makes a table
-id something two people can send each other rather than only say out loud.
+id something two people can send each other rather than only say out loud. It is
+also what **Create a table** hands you: the link shown while you wait is this
+parameter with the id the page generated.
 
 ## Deploying
 
@@ -200,9 +225,11 @@ npx playwright install chromium
 src/
   main.ts        the loops: one against the computer, one against a person
   audio.ts       the three tones; the only module that touches Web Audio
-  input.ts       keyboard and mouse handling
+  input.ts       keyboard, mouse and touch handling
   render.ts      draws the state onto the canvas, between two ticks
-  session.ts     which game is being played, and how its connection is doing
+  session.ts     which game is being played, how its connection is doing, and
+                 the URL that joins it
+  share.ts       handing that URL over: share sheet, clipboard, or neither
   status.ts      the line under the court, for both games
   game/
     state.ts     the shape of a game, its constants and its phase changes
