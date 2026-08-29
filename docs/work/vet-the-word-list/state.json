@@ -1,0 +1,24 @@
+{
+  "slug": "vet-the-word-list",
+  "branch": "fix/vet-the-word-list",
+  "stage": "built",
+  "updated": "2026-08-29T17:22:58Z",
+  "plan": {
+    "acs": 6,
+    "steps": 5,
+    "open": 0,
+    "requirementsHash": "53d566f7f972c0fba1099792d073c26e960b2ebac2bf19b6034027669f992650"
+  },
+  "build": {
+    "stepsDone": 5,
+    "deviations": 4,
+    "suite": "green",
+    "head": "3502cad"
+  },
+  "log": [
+    "2026-08-29T17:08:00Z 1-plan planned 6 ACs, 5 steps, 0 open questions; branched from main at 86e6953. Closes start-and-share E1.",
+    "2026-08-29T17:08:59Z plan approved by user via 1-plan",
+    "2026-08-29T17:08:59Z pipeline launched, diffRange 86e6953...HEAD (forked from main)",
+    "2026-08-29T17:22:58Z 2-build built 5/5, 4 deviations, 1 PLAN DEFECT (Test strategy names AC1's test as the one an emptied blocklist fails; it passes vacuously \u2014 AC2 and AC3 fail), suite green: 135 unit across two vitest projects + 77 behavioural, on macOS and in node:22-bookworm"
+  ]
+}
