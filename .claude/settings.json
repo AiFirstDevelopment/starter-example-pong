@@ -9,7 +9,8 @@
     "allow": [
       "Bash(gh pr ready *)",
       "Bash(gh pr merge *)",
-      "Bash(gh pr edit *)"
+      "Bash(gh pr edit *)",
+      "Bash(npm run deploy:*)"
     ]
   }
 }
