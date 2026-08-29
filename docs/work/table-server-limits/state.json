@@ -1,8 +1,8 @@
 {
   "slug": "table-server-limits",
   "branch": "fix/table-server-limits",
-  "stage": "adjudicated",
-  "updated": "2026-08-29T13:04:35Z",
+  "stage": "published",
+  "updated": "2026-08-29T13:20:00Z",
   "plan": {
     "acs": 7,
     "steps": 9,
@@ -47,6 +47,22 @@
     "2026-08-27T10:20:47Z Review round stopped by user before any lens wrote; build stage complete and committed at a638bad. Resume with /quorum:3-review then /quorum:4-quorum on this branch, or /quorum:pipeline with skipBuild. The workflow run wf_18b8a7a2-f33 is not resumable across sessions.",
     "2026-08-29T12:14:22Z review round relaunched with skipBuild over the committed build at a638bad",
     "2026-08-29T12:42:19Z panel complete, adjudication started",
-    "2026-08-29T13:04:35Z 4-quorum adjudicated ready with follow-ups, 5 accepted, 1 rejected, 0 escalations, 7/7 ACs met; suite green at 106 unit + 65 behavioural on macOS and node:22-bookworm"
-  ]
+    "2026-08-29T13:04:35Z 4-quorum adjudicated ready with follow-ups, 5 accepted, 1 rejected, 0 escalations, 7/7 ACs met; suite green at 106 unit + 65 behavioural on macOS and node:22-bookworm",
+    "2026-08-29T13:20:00Z 5-publish opened PR #7 ready for review; guard clean (0 violations), gate unknown (branch protection needs admin access to read); judge-diff recheck 1 finding, 0 blockers"
+  ],
+  "recheck": {
+    "lens": "judge-diff",
+    "findings": 1,
+    "blockers": 0,
+    "range": "7d65328..b6bf8f9"
+  },
+  "guard": {
+    "clean": true,
+    "violations": 0,
+    "gate": "unknown"
+  },
+  "pr": {
+    "url": "https://github.com/AiFirstDevelopment/starter-example-pong/pull/7",
+    "draft": false
+  }
 }
