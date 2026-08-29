@@ -2,7 +2,7 @@
 
 - **Slug:** vet-the-word-list
 - **Branch:** fix/vet-the-word-list
-- **Status:** built
+- **Status:** adjudicated
 
 ## Intent
 

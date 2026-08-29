@@ -146,8 +146,8 @@ describe('generateTableId', () => {
     // holds the generator to them: a version that went back to importing
     // `adjectives` and `animals` straight from the package would satisfy every
     // other assertion in this file, and the blocklist would be a file nothing
-    // reads. A hundred ids miss the 64 blocked words with probability 0.892^100,
-    // about one in ninety-six thousand, so this is decided by the wiring.
+    // reads. A hundred ids miss the 90 blocked words with probability 0.854^100,
+    // about one in seven million, so this is decided by the wiring.
     const adjective = new Set(TABLE_ID_ADJECTIVES);
     const animal = new Set(TABLE_ID_ANIMALS);
     for (const id of minted) {
@@ -163,13 +163,13 @@ describe('generateTableId', () => {
     // From the dictionary lengths, which is exact, rather than by drawing a
     // thousand ids and demanding no duplicate — that is a test whose own odds
     // decide whether it passes, and the space is the thing the criterion is
-    // about. 1167 adjectives, 326 animals and the 900 three-digit numbers,
+    // about. 1150 adjectives, 317 animals and the 900 three-digit numbers,
     // measured after the blocklist rather than before it: the corpora the
     // generator draws from are the curated ones, and a space counted from the
     // package's would be counting ids this game cannot mint.
     //
     // The digit factor comes from `ID_DIGITS` rather than from a literal 900,
-    // because the words alone are 380,442 — 262 times *under* the criterion —
+    // because the words alone are 364,550 — 274 times *under* the criterion —
     // so the whole margin over the bar is the one factor the implementation
     // owns. Narrowing the range to `{ min: 100, max: 200 }` leaves every other
     // assertion here green, and has to fail this one.

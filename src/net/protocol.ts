@@ -81,8 +81,8 @@ export const MAX_TABLE_ID_LENGTH = 64;
 /**
  * The three digits a generated id ends with.
  *
- * An adjective and an animal alone is 380 thousand ids; the digits take it to
- * 342 million. They cost nothing to say and they move the point at which two
+ * An adjective and an animal alone is 364 thousand ids; the digits take it to
+ * 328 million. They cost nothing to say and they move the point at which two
  * tables alive at the same moment are likely to collide from a few hundred to
  * twenty-three thousand. That matters more than it did when every id was one a
  * player chose: a collision between two ids people picked is theirs to shrug
