@@ -1,0 +1,66 @@
+{
+  "slug": "vet-the-word-list",
+  "branch": "fix/vet-the-word-list",
+  "stage": "published",
+  "updated": "2026-08-29T18:16:21Z",
+  "plan": {
+    "acs": 6,
+    "steps": 5,
+    "open": 0,
+    "requirementsHash": "53d566f7f972c0fba1099792d073c26e960b2ebac2bf19b6034027669f992650"
+  },
+  "build": {
+    "stepsDone": 5,
+    "deviations": 4,
+    "suite": "green",
+    "head": "3502cad"
+  },
+  "review": {
+    "round": 1,
+    "lenses": [
+      "behavior",
+      "correctness",
+      "spec-fidelity",
+      "security",
+      "simplicity",
+      "test-quality"
+    ],
+    "missing": [],
+    "findings": 12,
+    "blockers": 0,
+    "head": "252d687"
+  },
+  "verdict": {
+    "outcome": "ready with follow-ups",
+    "suite": "green",
+    "accepted": 11,
+    "rejected": 1,
+    "unmet": 0,
+    "escalations": 3,
+    "head": "1c95ecf"
+  },
+  "pr": {
+    "url": "https://github.com/AiFirstDevelopment/starter-example-pong/pull/10",
+    "draft": true
+  },
+  "log": [
+    "2026-08-29T17:08:00Z 1-plan planned 6 ACs, 5 steps, 0 open questions; branched from main at 86e6953. Closes start-and-share E1.",
+    "2026-08-29T17:08:59Z plan approved by user via 1-plan",
+    "2026-08-29T17:08:59Z pipeline launched, diffRange 86e6953...HEAD (forked from main)",
+    "2026-08-29T17:22:58Z 2-build built 5/5, 4 deviations, 1 PLAN DEFECT (Test strategy names AC1's test as the one an emptied blocklist fails; it passes vacuously \u2014 AC2 and AC3 fail), suite green: 135 unit across two vitest projects + 77 behavioural, on macOS and in node:22-bookworm",
+    "2026-08-29T17:54:40Z panel complete, adjudication started",
+    "2026-08-29T18:07:12Z 3-review round 1, six lenses, 12 findings, 0 blockers over 252d687 (recorded by 4-quorum; the scribe cannot write)",
+    "2026-08-29T18:07:20Z 4-quorum adjudicated ready with follow-ups over 1c95ecf: 11 accepted, 1 rejected, 0 unmet, 3 escalations, suite green (136 unit + 77 behavioural)",
+    "2026-08-29T18:30:00Z 5-publish opened draft PR #10 over fix/vet-the-word-list. Verdict is \"ready with follow-ups\" and the suite is green, but the plugin guard (0.23.0) exits 1 with one violation \u2014 outcome \"ready with follow-ups\" alongside open escalations \u2014 so the PR is a draft with the violation verbatim at the top of the body, unadjudicated. Gate unknown: --check-gate cannot read branch protection without admin access, so whether \"quorum guard\" is a required status check is unverified and not rounded up to a pass.",
+    "2026-08-29T18:16:21Z E1 fixed: Test strategy now names AC2 and AC3 as the tests an emptied blocklist fails, with the reason AC1 cannot be. E2 settled by user: keep the list including gay, and group it by reason rather than by corpus so the grouping stops implying something nobody meant. E3 is the guard bug, publishing over it. These edits land after adjudication; the 90-word set is unchanged and proven so."
+  ],
+  "recheck": {
+    "findings": 0,
+    "blockers": 0
+  },
+  "guard": {
+    "clean": false,
+    "violations": 1,
+    "gate": "unknown"
+  }
+}
